@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="tiu_red">#B00027</color>
+    <color name="tiu_red2">#800007</color>
+    <color name="tiu_grey">#A8A39E</color>
+    <color name="tiu_grey2">#84807D</color>
+    <color name="tiu_green">#118811</color>
+    <color name="color_blue">#1479b7</color>
+    <color name="grey_40">#999999</color>
+    <color name="grey_90">#263238</color>
+
+</resources>

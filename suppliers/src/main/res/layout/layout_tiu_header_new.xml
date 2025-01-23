@@ -1,0 +1,266 @@
+<!-- android:paddingTop="28dp" -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tiu_title_bar"
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:layout_gravity="top"
+    android:background="#000"
+    android:orientation="vertical"
+    android:paddingLeft="10dp"
+    android:paddingRight="10dp">
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="20dp">
+        <TextView
+            android:id="@+id/tiu_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text=""
+            android:layout_marginLeft="@dimen/pad_5dp"
+            android:textSize="@dimen/headtextSize"
+            android:textColor="#fff" />
+        <View
+            android:id="@+id/view1"
+            android:layout_toRightOf="@+id/tiu_clock"
+            android:layout_width="2dp"
+            android:layout_height="10dp"
+            android:background="#FFFF00"
+            android:layout_marginTop="2dp"
+            android:layout_marginLeft="4dp"/>
+        <TextView
+            android:layout_toRightOf="@+id/view1"
+            android:id="@+id/tiu_title_outlet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:layout_marginLeft="@dimen/pad_5dp"
+            android:text=""
+            android:textStyle="bold"
+            android:textSize="@dimen/headtextSize"
+            android:textColor="#fff" />
+        <TextView
+            android:layout_alignParentRight="true"
+            android:id="@+id/tiu_user_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:maxLength="24"
+            android:text=""
+            android:layout_marginRight="@dimen/pad_5dp"
+            android:textSize="@dimen/headtextSize"
+            android:textColor="#fff" />
+
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="20dp">
+        <TextView
+
+            android:id="@+id/tiu_title_balance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/pad_5dp"
+
+            android:textSize="@dimen/headtextSize"
+            android:text=""
+            android:textColor="#fff" />
+        <View
+            android:visibility="gone"
+            android:id="@+id/view2"
+            android:layout_toRightOf="@+id/tiu_title_balance"
+            android:layout_width="2dp"
+            android:layout_height="10dp"
+            android:background="#FFFF00"
+            android:layout_marginTop="2dp"
+            android:layout_marginLeft="4dp"/>
+        <TextView
+            android:layout_marginLeft="@dimen/pad_5dp"
+
+            android:layout_toRightOf="@+id/view2"
+            android:id="@+id/tiu_title_balance_cash"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text=""
+
+            android:textSize="@dimen/headtextSize"
+            android:textColor="#fff" />
+        <RelativeLayout
+            android:layout_alignParentRight="true"
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <!--
+                        <RelativeLayout
+                            android:id="@+id/rl_network"
+
+                            android:visibility="invisible"
+                            android:layout_toRightOf="@+id/activity_login_is_demo"
+                            android:background="@drawable/edit_bg_blue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="100dp">
+                            <ImageView
+                                android:layout_centerVertical="true"
+
+                                android:id="@+id/img_info"
+                                android:src="@drawable/warning"
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"/>
+                            <TextView
+                                android:layout_toRightOf="@+id/img_info"
+                                android:id="@+id/no_internet"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_centerVertical="true"
+                                android:text="No Internet"
+                                android:layout_marginRight="2dp"
+                                android:textSize="@dimen/margin10"
+                                android:textColor="#fff" />
+
+                        </RelativeLayout>
+            -->
+
+            <!--
+                        <RelativeLayout
+                            android:id="@+id/rl_server"
+                            android:visibility="invisible"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginLeft="4dp"
+                            android:layout_toRightOf="@+id/activity_login_is_demo"
+                            android:background="@drawable/red_background">
+
+                            <ImageView
+                                android:id="@+id/img_info_server"
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"
+                                android:layout_centerVertical="true"
+                                android:src="@drawable/warning" />
+
+                            <TextView
+
+                                android:visibility="visible"
+                                android:id="@+id/no_server"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_centerVertical="true"
+                                android:layout_marginRight="2dp"
+                                android:layout_toRightOf="@+id/img_info_server"
+                                android:text="Server Error"
+                                android:textColor="#fff"
+                                android:textSize="@dimen/margin10" />
+
+
+
+
+                        </RelativeLayout>
+            -->
+
+            <TextView
+                android:id="@+id/activity_login_is_demo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+
+                android:visibility="gone"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="@dimen/pad_5dp"
+                android:text="DEMO"
+                android:textColor="#FFFFFF"
+
+                android:textSize="@dimen/headtextSize" />
+        </RelativeLayout>
+
+
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="20dp">
+        <TextView
+
+            android:id="@+id/tiu_title_balance_commision"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/pad_5dp"
+
+            android:textSize="@dimen/headtextSize"
+            android:text=""
+            android:textColor="#fff" />
+        <View
+            android:visibility="gone"
+            android:id="@+id/view3"
+            android:layout_toRightOf="@+id/tiu_title_balance_commision"
+            android:layout_width="2dp"
+            android:layout_height="10dp"
+            android:background="#FFFF00"
+            android:layout_marginTop="2dp"
+            android:layout_marginLeft="4dp"/>
+        <TextView
+            android:layout_marginLeft="@dimen/pad_5dp"
+
+            android:layout_toRightOf="@+id/view3"
+            android:id="@+id/tiu_title_balance_swipe"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text=""
+
+            android:textSize="@dimen/headtextSize"
+            android:textColor="#fff" />
+        <!--
+                <LinearLayout
+                    android:id="@+id/ll_views"
+                    android:layout_alignParentRight="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent">
+                    <TextView
+
+
+                        android:gravity="center_vertical"
+                        android:id="@+id/txt_app_version"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:visibility="gone"
+                        android:text=""
+                        android:textColor="#FFFFFF"
+                        android:textSize="@dimen/headtextSize" />
+                    <ImageView
+                        android:scaleType="fitXY"
+                        android:adjustViewBounds="true"
+                        android:id="@+id/img_wifi"
+                        android:src="@drawable/wifi_1_bar"
+                        android:layout_width="28dp"
+                        android:layout_height="match_parent"
+                        />
+                    <ImageView
+                        android:layout_toRightOf="@+id/img_wifi"
+                        android:scaleType="fitXY"
+                        android:adjustViewBounds="true"
+                        android:src="@drawable/network_4_bars"
+                        android:id="@+id/img_network"
+                        android:layout_width="28dp"
+                        android:layout_height="match_parent"
+                        />
+
+                    <ImageView
+                        android:layout_toRightOf="@+id/img_network"
+                        android:scaleType="fitXY"
+                        android:adjustViewBounds="true"
+                        android:id="@+id/txt_battery"
+                        android:src="@drawable/battery_75"
+                        android:layout_width="28dp"
+                        android:layout_height="match_parent"
+                        />
+
+                </LinearLayout>
+        -->
+
+
+    </RelativeLayout>
+
+</LinearLayout>

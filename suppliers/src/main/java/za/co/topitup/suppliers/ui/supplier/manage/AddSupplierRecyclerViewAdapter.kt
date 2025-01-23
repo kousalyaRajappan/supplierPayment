@@ -1,0 +1,170 @@
+package za.co.topitup.suppliers.ui.supplier.manage
+
+import android.graphics.drawable.Drawable
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Filter
+import android.widget.Filterable
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
+import io.realm.RealmRecyclerViewAdapter
+import io.realm.RealmResults
+import za.co.topitup.suppliers.GlideApp
+import za.co.topitup.suppliers.R
+import za.co.topitup.suppliers.database.SupplierDatabaseOperations
+import za.co.topitup.suppliers.databinding.AddSupplierCardBinding
+import za.co.topitup.suppliers.models.Retailer
+import za.co.topitup.suppliers.models.SupplierRealm
+import za.co.topitup.suppliers.network.loadSupplierImage
+import za.co.topitup.suppliers.utils.toDistanceString
+import javax.annotation.Nullable
+
+class AddSupplierRecyclerViewAdapter(
+    private val onAddClickListener: OnClickListener,
+    supplierList: RealmResults<SupplierRealm>
+) : RealmRecyclerViewAdapter<SupplierRealm?,
+        AddSupplierRecyclerViewAdapter.AddSupplierViewHolder?>(
+    supplierList, true, false
+), Filterable {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AddSupplierViewHolder {
+        val layoutView = AddSupplierViewHolder(
+            AddSupplierCardBinding.inflate(
+                LayoutInflater.from(parent.context),
+                parent,
+                false
+            )
+        )
+
+        layoutView.addButton.setOnClickListener {
+            val position = layoutView.absoluteAdapterPosition
+            onAddClickListener.onAddClick(data?.get(position))
+        }
+
+        layoutView.infoButton.setOnClickListener {
+            if (layoutView.infoLayout.visibility == View.GONE) {
+                layoutView.infoLayout.visibility = View.VISIBLE
+            } else {
+                layoutView.infoLayout.visibility = View.GONE
+            }
+        }
+        return layoutView
+    }
+
+    override fun onBindViewHolder(holder: AddSupplierViewHolder, position: Int) {
+        if (position < data?.size!!) {
+            val supplier = data?.get(position)//  supplierList.[position]
+            holder.name.text = supplier?.name
+                val url = Retailer.logoBaseURL.plus("/").plus(supplier?.logo)
+
+            GlideApp.with(holder.itemView.context).load(url)
+                .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
+                .error(za.co.topitup.suppliers.R.drawable.ic_error)
+                .listener(object : RequestListener<Drawable?> {
+                    override fun onLoadFailed(
+                        @Nullable e: GlideException?,
+                        model: Any,
+                        target: Target<Drawable?>,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        return false
+                    }
+
+                    override fun onResourceReady(
+                        resource: Drawable?,
+                        model: Any,
+                        target: Target<Drawable?>,
+                        dataSource: DataSource,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        return false
+                    }
+                }).into(holder.logo)
+           /* supplier?.logo?.let { logo ->
+                loadSupplierImage(
+                    context = holder.itemView.context,
+                    imageView = holder.logo,
+                    imageFileName = logo,
+                    errorImageDrawable = R.drawable.ic_suppliers,
+                )
+            }*/
+            if (supplier?.requiresActivation?.not() == true) {
+                holder.activationRequired.text = holder.itemView.context.getString(R.string.no_activation_required)
+            } else {
+                holder.activationRequired.text = holder.itemView.context.getString(R.string.activation_required)
+            }
+
+            supplier?.distance?.let { holder.distance.toDistanceString(it) }
+
+            holder.category.text = supplier?.category
+            holder.phone.text = supplier?.phone
+            holder.address.text = supplier?.address
+
+        }
+
+    }
+
+    override fun getItemCount(): Int {
+        return data?.size!!
+    }
+
+
+    class OnClickListener(val clickListener: (supplier: SupplierRealm?) -> Unit) {
+        fun onAddClick(supplier: SupplierRealm?) = clickListener(supplier)
+    }
+
+    /* ----------------------- ViewHolder --------------------------- */
+
+    inner class AddSupplierViewHolder(binding: AddSupplierCardBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        val logo: ImageView = binding.logoImageView
+        val name: TextView = binding.nameTextView
+        val distance = binding.distanceTextView
+        val vendorActivated = binding.activatedImageView
+        val addButton = binding.addButton
+        val infoButton = binding.infoButton
+        val category = binding.categoryTextView
+        val phone = binding.phoneTextView
+        val address = binding.addressTextView
+        val activationRequired = binding.activationRequiredTextView
+
+        val infoLayout = binding.infoLinearLayout
+
+    }
+
+    /* ----------------------- Filter --------------------------- */
+    private fun filterResults(name: String, type: String) {
+        val results = SupplierDatabaseOperations().getSuppliers(name, type)
+        updateData(results)
+    }
+
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                return FilterResults()
+            }
+
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                val strings = constraint?.split(":")
+                if (strings != null) {
+                    val name = strings[1]
+                    val category = if (strings[3] == "All") {
+                        ""
+                    } else {
+                        strings[3]
+                    }
+                    filterResults(name, category)
+                }
+            }
+
+        }
+    }
+}

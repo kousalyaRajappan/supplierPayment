@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/addSupplierMenuButton"
+        android:contentDescription="@string/addSupplierButtonText"
+        android:icon="@drawable/ic_add_circle"
+        android:title="@string/addSupplierButtonText"
+        android:tooltipText="Add a supplier to your payment list"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/supplierListRefreshButton"
+        android:icon="@drawable/ic_baseline_download_for_offline_24"
+        android:iconTint="@color/white"
+        android:title="Refresh List"
+        android:titleCondensed="Refresh"
+        android:tooltipText="Update the list on suppliers"
+        android:visible="false"
+        app:showAsAction="always" />
+
+    <!--    <item android:id="@+id/settingsMenu"-->
+<!--        android:icon="@drawable/ic_settings"-->
+<!--        android:title="@string/settings"-->
+<!--        android:contentDescription="@string/settings"-->
+<!--        app:showAsAction="ifRoom" />-->
+
+</menu>

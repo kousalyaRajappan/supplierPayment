@@ -1,0 +1,131 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
+    //Realm Kotlin
+    //id 'io.realm.kotlin'
+    // Realm Java
+    id 'org.jetbrains.kotlin.kapt'
+
+}
+//Realm Java
+apply plugin: "realm-android"
+
+android {
+    compileSdk 33
+
+    defaultConfig {
+        //applicationId "za.co.topitup.suppliers"
+        minSdk 26
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+        buildConfigField 'int', 'VERSION_CODE', "1"
+        buildConfigField 'String', 'VERSION_NAME', "\"1.0\""
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        signingConfig signingConfigs.debug
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+    buildFeatures {
+        viewBinding true
+        buildConfig true
+    }
+    namespace 'za.co.topitup.suppliers'
+}
+
+dependencies {
+
+    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.appcompat:appcompat:1.6.0'
+    implementation 'com.google.android.material:material:1.7.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.5.3'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.5.3'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation "androidx.viewpager2:viewpager2:1.0.0"
+    implementation 'androidx.preference:preference:1.2.0'
+    implementation files('libs/SDK4BaseBinderV2.1.5.jar')
+    implementation 'androidx.core:core-ktx:1.9.0'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+    // Google Json library
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    //Android X
+    def lifecycle_version = "2.5.1"
+    def activity_version = "1.6.1"
+    def fragment_version = "1.5.5"
+
+    implementation "androidx.fragment:fragment-ktx:$fragment_version"
+    implementation "androidx.activity:activity-ktx:$activity_version"
+    //RecyclerView
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    // ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+    // LiveData
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
+    // Lifecycles only (without ViewModel or LiveData)
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
+    // Saved state module for ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycle_version"
+
+    //Jetpack Preferences
+    def preference_version = "1.2.0"
+    implementation "androidx.preference:preference-ktx:$preference_version"
+
+    //Retrofit
+    def retrofit_version = "2.9.0"
+    implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
+    implementation "com.squareup.retrofit2:converter-gson:$retrofit_version"
+    implementation "com.squareup.retrofit2:converter-scalars:$retrofit_version"
+    implementation "com.squareup.retrofit2:converter-simplexml:$retrofit_version"
+    implementation 'com.squareup.okhttp3:okhttp:4.9.2'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.9.2'
+
+    //Kotlin Realm Database
+    //implementation "io.realm.kotlin:library-base:0.10.0"
+    ////implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1"
+
+    // Realm RecyclerView
+    implementation 'io.realm:realm-android-library:10.19.0' // Correct usage
+    kapt 'io.realm:realm-annotations:10.19.0'
+
+    // Coil
+    implementation 'io.coil-kt:coil:2.2.2'
+    implementation 'io.coil-kt:coil-svg:2.2.2'
+    //Google Play Location Services
+
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+    def glide_version = '4.11.0'
+    annotationProcessor 'androidx.annotation:annotation:1.5.0'
+
+    implementation "com.github.bumptech.glide:glide:$glide_version"
+    implementation "com.github.bumptech.glide:annotations:$glide_version"
+    implementation "com.github.bumptech.glide:okhttp3-integration:$glide_version"
+    kapt "com.github.bumptech.glide:compiler:$glide_version"
+
+
+    implementation 'org.jetbrains.anko:anko-design:0.10.8'
+  //  implementation "org.jetbrains.anko:anko-design:0.10.8"
+
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+
+
+}

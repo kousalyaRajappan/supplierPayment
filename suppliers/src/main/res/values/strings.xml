@@ -1,0 +1,99 @@
+<resources>
+    <string name="app_name">Suppliers</string>
+    <string name="name">Supplier Payments</string>
+    <string name="title_supplier">My Suppliers</string>
+    <string name="title_payment">Payment</string>
+    <string name="title_history">Payment Reports</string>
+    <string name="title_management">Supplier Management</string>
+
+    <string name="default_currency">ZAR</string>
+    <string name="locale_language">en</string>
+    <string name="locale_code">ZA</string>
+
+    <string name="supplier_activate_text">Click the button to activate Payments for your account.</string>
+    <string name="licence_activate_text">Enter Licence PIN to activate Payments.</string>
+    <string name="activate_supplier_message">Your store is not <b>activated</b> to make payments to %1$s</string>
+
+    <string name="permission_rationale">Location permission needed for core functionality</string>
+    <string name="permission_denied_explanation">Permission was denied, but is needed for core functionality.</string>
+    <string name="settings">Settings</string>
+    <string name="ok">OK</string>
+    <string name="dialogCloseText">Close</string>
+    <string name="versionDialogText">You are running version %1$s</string>
+    <string name="cancel">Cancel</string>
+
+
+
+    <string name="addSupplierButtonText">Add Supplier</string>
+    <string name="empty_supplier_list">Your Supplier List is Empty! Add a Supplier to make payments.</string>
+    <string name="supplier_logo_description">Supplier Logo</string>
+    <string name="activation_pending_string">Pending Activation</string>
+    <string name="no_payments_text">No Payments made.</string>
+    <string name="no_purchases_text">No Purchases made. </string>
+
+    <string name="network_error_basic">A network error occurred</string>
+
+    <string name="reset_location_button_text">Reset Location</string>
+    <string name="new_location">New Location:</string>
+    <string name="old_location">Old Location:</string>
+    <string name="categoryLabel">Category:</string>
+    <string name="phoneNumberLabel">Phone:</string>
+    <string name="accountNumberLabel">Account #:</string>
+    <string name="accountNumberFullLabel">Account Number:</string>
+    <string name="distanceLabel">Distance:</string>
+    <string name="last_payment_label">Last Payment:</string>
+    <string name="last_purchase_label">Last Purchase:</string>
+    <string name="go_back_button_label">Go Back</string>
+    <string name="remove_button_label">Remove</string>
+    <string name="card_info_button_description">More information button</string>
+    <string name="activation_in_progress">Account activation is still in progress</string>
+    <string name="go_back">Go Back</string>
+    <string name="activate_account">Activate Account</string>
+    <string name="address_label">Address:</string>
+    <string name="reference_label">Reference:</string>
+    <string name="activation_required">Activation Required</string>
+    <string name="select_a_category">Select a category:</string>
+    <string name="choose_a_supplier">Choose a supplier:</string>
+    <string name="no_activation_required">No Activation Required</string>
+
+<!--    ReceiptDialog-->
+    <string name="company_name">Top it Up</string>
+    <string name="reprintLabel">Reprint</string>
+    <string name="company_phone">0860 111 723</string>
+    <string name="company_website">www.topitup.co.za</string>
+    <string name="receipt_number_label">Receipt #:</string>
+    <string name="date_label">Date</string>
+    <string name="time_label">Time</string>
+    <string name="cashier_label">Cashier</string>
+    <string name="account_number_label">Account #:</string>
+    <string name="customer_number_label">Customer #:</string>
+    <string name="shipment_number_label">Shipment #:</string>
+    <string name="driver_number_label">Driver #:</string>
+    <string name="driver_cell_number_label">Driver Cell #:</string>
+
+    <string name="amount_label">Amount:</string>
+    <string name="info_button_description">Press here for more information</string>
+    <string name="paymentButtonText">Make Payment</string>
+    <string name="amountLabel">Amount</string>
+    <string name="invoiceNumberLabel">Invoice/Reference Number</string>
+    <string name="driverNumberLabel">Driver Number</string>
+    <string name="driverPhoneNumber">Driver Phone Number</string>
+    <string name="receiptDialogPositive">Print</string>
+    <string name="receiptDialogNegative">Close</string>
+    <string name="duplicate">duplicate customer</string>
+
+<!--    Payment Fragment-->
+    <string name="networkError">A Network Error occurred. Please try again.\nIf the problem continues, contact Support</string>
+    <string name="local_suppliers_button_text">Local Suppliers [%1$d]</string>
+    <string name="national_suppliers_button_text">National Suppliers [%1$d]</string>
+    <string name="exitDialogTitle">Exit Supplier Payments?</string>
+    <string name="exitDialogMessage">Do you want to return to the main Top it Up screen?</string>
+    <string name="dialogPositiveText">Yes</string>
+    <string name="dialogNegativeText">No</string>
+    <string name="select_supplier">Select Supplier:</string>
+    <string name="select_date">Select Date</string>
+    <string name="reset">Reset</string>
+    <string name="no_items_to_display">No items to display.</string>
+
+
+</resources>
