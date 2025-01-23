@@ -1,23 +1,20 @@
 package za.co.topitup.suppliers.ui.supplier
 
 import android.util.Log
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import okhttp3.ResponseBody
-import org.jetbrains.anko.doAsync
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import za.co.topitup.suppliers.database.SupplierDatabaseOperations
 import za.co.topitup.suppliers.models.SupplierRealm
 import za.co.topitup.suppliers.network.ApiResponse
 import za.co.topitup.suppliers.network.ApiStatus
 import za.co.topitup.suppliers.repositories.SupplierRepository
-import za.co.topitup.suppliers.utils.checkApiResponsePeninsula
 
 class SupplierViewModel : ViewModel() {
 
@@ -50,7 +47,7 @@ class SupplierViewModel : ViewModel() {
         }
     }
 
-    val getAdvertUrls = fun (): Flow<ApiResponse> {
+    val getAdvertUrls = fun(): Flow<ApiResponse> {
         return flow {
             emit(ApiResponse.Loading(_data = null, isLoading = true)) // 1. Loading State
             val response = supplierRepository.getAdvertURLsFromAPI()
@@ -64,7 +61,7 @@ class SupplierViewModel : ViewModel() {
         }
     }
 
-    val getRetailerInfo = fun (): Flow<ApiResponse> {
+    val getRetailerInfo = fun(): Flow<ApiResponse> {
         return flow {
             emit(ApiResponse.Loading(_data = null, isLoading = true)) // 1. Loading State
             val response = supplierRepository.getRetailerInfo()
@@ -78,7 +75,7 @@ class SupplierViewModel : ViewModel() {
 
         }
     }
-    val getRetailerInfoNew = fun (): Flow<ApiResponse> {
+    val getRetailerInfoNew = fun(): Flow<ApiResponse> {
         return flow {
             emit(ApiResponse.Loading(_data = null, isLoading = true)) // 1. Loading State
             val response = supplierRepository.getRetailerInfoNew()
@@ -92,7 +89,7 @@ class SupplierViewModel : ViewModel() {
 
         }
     }
-    val getBalanceInfo = fun (): Flow<ApiResponse> {
+    val getBalanceInfo = fun(): Flow<ApiResponse> {
         return flow {
             emit(ApiResponse.Loading(_data = null, isLoading = true)) // 1. Loading State
             val response = supplierRepository.getBalanceInfo()
@@ -101,7 +98,7 @@ class SupplierViewModel : ViewModel() {
                 emit(response)
             }
             if (response.status == ApiStatus.EXCEPTION) {
-                Log.e("exception","ex00"+response.message)
+                Log.e("exception", "ex00" + response.message)
                 emit(response)
             }
 

@@ -211,24 +211,24 @@ class SupplierFragment : Fragment() {
 
         binding.localButton.setOnClickListener {
             if (!localFiltered) {
-                recyclerViewAdapter.filter.filter("LOCAL")
+                recyclerViewAdapter.applyFilter("LOCAL")
                 localFiltered = true
                 nationalFiltered = false
             }
             else {
-                recyclerViewAdapter.filter.filter("")
+                recyclerViewAdapter.applyFilter("")
                 localFiltered = false
             }
         }
 
         binding.nationalButton.setOnClickListener {
             if (!nationalFiltered) {
-                recyclerViewAdapter.filter.filter("NATIONAL")
+                recyclerViewAdapter.applyFilter("NATIONAL")
                 localFiltered = false
                 nationalFiltered = true
             }
             else {
-                recyclerViewAdapter.filter.filter("f")
+                recyclerViewAdapter.applyFilter("f")
                 nationalFiltered = false
             }
         }
