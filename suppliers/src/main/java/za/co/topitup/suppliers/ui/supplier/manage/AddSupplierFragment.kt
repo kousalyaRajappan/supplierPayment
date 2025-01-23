@@ -94,10 +94,7 @@ class AddSupplierFragment : Fragment() {
                 id: Long
             ) {
                 category = categories[position]
-                recyclerViewAdapter.applyFilter(
-                    "name:$name:type:$category",
-                    category = TODO()
-                )
+                recyclerViewAdapter.filter.filter("name:$name:type:$category")
                 return
             }
 
@@ -116,10 +113,8 @@ class AddSupplierFragment : Fragment() {
                 if (newText != null) {
                     name = newText
                 }
-                recyclerViewAdapter.applyFilter(
-                    "name:$name:type:$category",
-                    category = TODO()
-                )
+                recyclerViewAdapter.filter.filter("name:$name:type:$category")
+
                 return true
             }
         })

@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Filter
+import android.widget.Filterable
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -18,9 +19,122 @@ import za.co.topitup.suppliers.database.SupplierDatabaseOperations
 import za.co.topitup.suppliers.databinding.AddSupplierCardBinding
 import za.co.topitup.suppliers.models.Retailer
 import za.co.topitup.suppliers.models.SupplierRealm
-
+import za.co.topitup.suppliers.utils.toDistanceString
 
 class AddSupplierRecyclerViewAdapter(
+    private val onAddClickListener: OnClickListener,
+    private val supplierList: List<SupplierRealm>
+) : RecyclerView.Adapter<AddSupplierRecyclerViewAdapter.AddSupplierViewHolder>(), Filterable {
+
+    private var filteredList: List<SupplierRealm> = supplierList
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AddSupplierViewHolder {
+        val binding = AddSupplierCardBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return AddSupplierViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: AddSupplierViewHolder, position: Int) {
+        val supplier = filteredList[position]
+
+        holder.name.text = supplier.name
+
+        // Load supplier logo using Glide
+        val logoUrl = Retailer.logoBaseURL.plus("/").plus(supplier.logo)
+        GlideApp.with(holder.itemView.context)
+            .load(logoUrl)
+            .error(R.drawable.ic_error)
+            .into(holder.logo)
+
+        // Set activation required status
+        holder.activationRequired.text = if (supplier.requiresActivation == true) {
+            holder.itemView.context.getString(R.string.activation_required)
+        } else {
+            holder.itemView.context.getString(R.string.no_activation_required)
+        }
+
+        // Populate other fields
+        holder.category.text = supplier.category
+        holder.phone.text = supplier.phone
+        holder.address.text = supplier.address
+        supplier.distance?.let { holder.distance.toDistanceString(it) }
+
+        // Set click listeners
+        holder.addButton.setOnClickListener { onAddClickListener.onAddClick(supplier) }
+        holder.infoButton.setOnClickListener {
+            holder.infoLayout.visibility =
+                if (holder.infoLayout.visibility == View.GONE) View.VISIBLE else View.GONE
+        }
+    }
+
+    override fun getItemCount(): Int {
+        return filteredList.size
+    }
+
+    fun updateData(newList: List<SupplierRealm>) {
+        this.filteredList = newList
+        notifyDataSetChanged()
+    }
+
+    /* ViewHolder */
+    inner class AddSupplierViewHolder(binding: AddSupplierCardBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        val logo: ImageView = binding.logoImageView
+        val name: TextView = binding.nameTextView
+        val distance = binding.distanceTextView
+        val addButton = binding.addButton
+        val infoButton = binding.infoButton
+        val category = binding.categoryTextView
+        val phone = binding.phoneTextView
+        val address = binding.addressTextView
+        val activationRequired = binding.activationRequiredTextView
+        val infoLayout = binding.infoLinearLayout
+    }
+
+    /* OnClickListener */
+    class OnClickListener(val clickListener: (supplier: SupplierRealm) -> Unit) {
+        fun onAddClick(supplier: SupplierRealm) = clickListener(supplier)
+    }
+
+    /* Filtering */
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                val filterResults = FilterResults()
+
+                if (!constraint.isNullOrEmpty()) {
+                    val parts = constraint.split(":")
+                    val name = parts.getOrNull(1)?.trim() ?: ""
+                    val category = parts.getOrNull(3)?.trim() ?: ""
+
+                    val filtered = supplierList.filter { supplier ->
+                        (name.isEmpty() || supplier.name.contains(name, ignoreCase = true)) &&
+                                (category.isEmpty() || supplier.category.equals(category, ignoreCase = true))
+                    }
+                    filterResults.values = filtered
+                    filterResults.count = filtered.size
+                } else {
+                    filterResults.values = supplierList
+                    filterResults.count = supplierList.size
+                }
+                return filterResults
+            }
+
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                @Suppress("UNCHECKED_CAST")
+                filteredList = results?.values as? List<SupplierRealm> ?: supplierList
+                notifyDataSetChanged()
+            }
+        }
+    }
+}
+
+
+/*class AddSupplierRecyclerViewAdapter(
     private val onAddClickListener: OnClickListener,
     private var supplierList: List<SupplierRealm> = listOf()
 ) : RecyclerView.Adapter<AddSupplierRecyclerViewAdapter.AddSupplierViewHolder>() {
@@ -143,7 +257,7 @@ class AddSupplierRecyclerViewAdapter(
             }
         }
     }
-}
+}*/
 
 /*
 class AddSupplierRecyclerViewAdapter(
