@@ -48,41 +48,59 @@ class HistoryViewModell : ViewModel() {
                 } catch (ex: Exception) {
                     return
                 }
+                if (res.contains("<error><err>") || res.contains("ERR:") || res.contains("\"err\"")) {
+//                    val matcher: String = StringUtils.substringBetween(res, "<err>", "</err>")
+
+                    livepaymentlist.postValue(null);
 
 
-                Log.e("response","..res........"+res)
+
+                    //Toasty.info(mContext, matcher, 8000, true).show();
+                    /* tv_response.setTextColor(Color.parseColor("#ff0000"))
+                     tv_response.setText(matcher)
+                     txtAccountNumber.setEnabled(true)
+                     dialogEditText.setEnabled(true)
+                     dialogEditText_cent.setEnabled(true)
+                     dialogEditText.requestFocus()*/
+
+
+                    //Toasty.info(mContext, matcher, 8000, true).show();
+                } else {
+
+                    Log.e("response", "..res........" + res)
 //                var res = supplierList.value.toString()
-                val toSplit: Array<String> =
-                    res.split("\n".toRegex()).dropLastWhile { it.isEmpty() }
-                        .toTypedArray()
-                for (i in toSplit.indices) {
-                    val s = toSplit[i]
-                    //rowCount++;
-                    val tokens = s.split("\\^".toRegex()).dropLastWhile { it.isEmpty() }
-                        .toTypedArray()
+                    val toSplit: Array<String> =
+                        res.split("\n".toRegex()).dropLastWhile { it.isEmpty() }
+                            .toTypedArray()
+                    for (i in toSplit.indices) {
+                        val s = toSplit[i]
+                        //rowCount++;
+                        val tokens = s.split("\\^".toRegex()).dropLastWhile { it.isEmpty() }
+                            .toTypedArray()
 //                        Timber.i("tokens" + i + " value" + tokens[3])
-                    val test = MyItem()
-                    test.supplierRef = tokens[0]
-                    test.sup_driver = tokens[4]
-                    test.sup_driver_cell = tokens[5]
+                        val test = MyItem()
+                        test.supplierRef = tokens[0]
+                        test.sup_driver = tokens[4]
+                        test.sup_driver_cell = tokens[5]
 
 
-                    test.supShipment = tokens[6]
-                    test.supCustomer = tokens[2]
+                        test.supShipment = tokens[6]
+                        test.supCustomer = tokens[2]
 
-                    test.supSupplierName = tokens[7]
-                    try {
-                        val value = tokens[3]
-                        test.supAmount = " R " + value
-                    } catch (ex: Exception) {
-                        test.supAmount = tokens[3]
-                    }
-                    // Timber.i("REPRINT: " + value);
-                    test.btn_date = tokens[1]
+                        test.supSupplierName = tokens[7]
+                        try {
+                            val value = tokens[3]
+                            test.supAmount = " R " + value
+                        } catch (ex: Exception) {
+                            test.supAmount = tokens[3]
+                        }
+                        // Timber.i("REPRINT: " + value);
+                        test.btn_date = tokens[1]
 //                    test.btn_user = tokens[5]
-                    movies.add(test)
+                        movies.add(test)
+                    }
+                    livepaymentlist.postValue(movies)
                 }
-                livepaymentlist.postValue(movies)
 
 
             }
