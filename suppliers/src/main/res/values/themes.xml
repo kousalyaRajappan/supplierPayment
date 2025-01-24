@@ -1,7 +1,8 @@
 <resources>
     <!-- Base application theme. -->
-    <style name="Theme.SupplierManagement" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
+    <style name="Theme.SupplierManagement" parent="Theme.MaterialComponents.Light.NoActionBar">
+
+    <!-- Primary brand color. -->
         <item name="colorPrimary">@color/tiu_red</item>
         <!-- <item name="colorPrimaryVariant">@color/purple_700</item> -->
         <item name="colorPrimaryVariant">@color/tiu_red2</item>
