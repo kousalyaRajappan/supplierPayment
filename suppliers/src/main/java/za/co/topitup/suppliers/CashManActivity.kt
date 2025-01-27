@@ -1,6 +1,8 @@
 package za.co.topitup.suppliers
 
 import android.app.Dialog
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -45,6 +47,7 @@ import za.co.topitup.suppliers.utils.toast
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 //const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
 
 /**
@@ -66,6 +69,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     private lateinit var vendorLatitude: String
     private lateinit var vendorLongitude: String
     var movies = ArrayList<MyItem>()
+    private val ACTION_USB_PERMISSION = "com.example.packagename.USB_PERMISSION"
 
     //    private var locationEnabled: Boolean = false
     private var locationEnabled: Boolean = true
@@ -90,6 +94,10 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     private lateinit var tiu_title_balance_cash: TextView
 
     private lateinit var tiu_title_outlet: TextView
+    private lateinit var txt_version: TextView
+
+
+     lateinit var usbDeviceReceiver: UsbDeviceReceiver
 
 
 //    private var liveEnv: Boolean = false
@@ -122,11 +130,16 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         loginPass = "1111"
         var testEnv:String = intent.getStringExtra("testEnv").toString()
 
-        showDialog("licence :  $licence \n posUser : $posUser \n deviceType : $deviceType \n retailer  : $retailerId  \nliveenv : $liveEnv")
+//        showDialog("licence :  $licence \n posUser : $posUser \n deviceType : $deviceType \n retailer  : $retailerId  \nliveenv : $liveEnv")
 //        Log.e("live env","live............"+deviceType)
         Retailer.create(retailerId, licence, posUser, deviceType, liveEnv1)
         Constants.RETAILER_ID = retailerId
-       /* sharedPreferences = AppPreferences(applicationContext)
+
+        usbDeviceReceiver = UsbDeviceReceiver()
+        val filter = IntentFilter(ACTION_USB_PERMISSION)
+
+        registerReceiver(usbDeviceReceiver,filter)
+        /* sharedPreferences = AppPreferences(applicationContext)
         //vendorActivated = sharedPreferences.vendorActivated
         sharedPreferences.RETAILERID = retailerId*/
         // Initialize Realm
@@ -175,6 +188,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         val refreshButton = topAppBar.menu.findItem(R.id.supplierListRefreshButton)
         val tiu_clock = findViewById(R.id.tiu_clock) as TextView
         tiu_title_balance = findViewById(R.id.tiu_title_balance) as TextView
+        txt_version = findViewById(R.id.txt_version) as TextView
 
         tiu_title_balance_cash = findViewById(R.id.tiu_title_balance_cash) as TextView
 
@@ -184,6 +198,17 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         val tiu_user_name = findViewById(R.id.tiu_user_name) as TextView
 
 
+        try {
+            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+            val versionCode = packageInfo.versionCode
+            val versionName = packageInfo.versionName
+
+            txt_version.setText(versionName.toString())
+            // Now, you can use versionCode and versionName as needed.
+            // For example, you can display them in a TextView or log them.
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
 /*
         tiu_user_name.setText(user_name)
         tiu_title_outlet.setText(account_number)*/
@@ -344,12 +369,15 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     }
 
     private fun showExitDialog() {
-        MaterialAlertDialogBuilder(this)
+
+        unregisterReceiver(usbDeviceReceiver)
+        finish()
+       /* MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.exitDialogTitle))
             .setMessage(getString(R.string.exitDialogMessage))
             .setPositiveButton(getString(R.string.dialogPositiveText)) { _, _ -> finish() }
             .setNegativeButton(getString(R.string.dialogNegativeText), null)
-            .show()
+            .show()*/
     }
 
 //  Location functions
@@ -487,11 +515,13 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
                     finBalance.balance?.let { finBalance.balance = it }
                     finBalance.balance_cash?.let { finBalance.balance_cash = it }
+                    finBalance.available_balance?.let { finBalance.available_balance = it }
+
                     finBalance.acn1?.let { finBalance.acn1 = it }
 
                     runOnUiThread {
                         tiu_title_balance.text =
-                            "Standard R " + finBalance.balance
+                            "Standard R " + finBalance.available_balance
                         tiu_title_balance_cash.text = " Bills R " +finBalance.balance_cash
                         sharedPreferences.accountNumber = finBalance.acn1
                         tiu_title_outlet.setText(sharedPreferences.accountNumber)

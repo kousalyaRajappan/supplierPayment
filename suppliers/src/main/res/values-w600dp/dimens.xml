@@ -1,0 +1,16 @@
+<resources>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <integer name="receipt_default_font_size">27</integer>
+    <dimen name="pad_5dp">5dp</dimen>
+    <dimen name="headtextSize">11dp</dimen>
+
+    <dimen name="spacing_middle">10dp</dimen>
+    <dimen name="spacing_large">15dp</dimen>
+    <dimen name="spacing_mlarge">20dp</dimen>
+    <dimen name="spacing_smlarge">18dp</dimen>
+    <dimen name="spacing_medium">5dp</dimen>
+    <dimen name="spacing_small">3dp</dimen>
+
+</resources>

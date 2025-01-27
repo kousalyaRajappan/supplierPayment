@@ -85,7 +85,7 @@ interface SupplierEndpointAPI {
     ): Response<Supplier>
 
 
-    @GET("terminalnew/financial/get-balance")
+    @GET("voucherapi/financial/get-balance")
     suspend fun getbalancenew(
         @HeaderMap headers: Map<String, String>,
         @Query("lvl") lvl: String?

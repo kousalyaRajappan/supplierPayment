@@ -1,5 +1,6 @@
 package za.co.topitup.suppliers.ui.payment
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import android.util.Printer
@@ -90,9 +91,10 @@ class PaymentViewModel : ViewModel() {
     }
 
 
-    val sendPensuliaPaymentToApi = fun (payment: PaymentRealm,
-                                supplierId: Int,
-                                supplierAccountNumber: String,mcon: Context): LiveData<ApiResponse> {
+    val sendPensuliaPaymentToApi = @SuppressLint("SuspiciousIndentation")
+    fun (payment: PaymentRealm,
+         supplierId: Int,
+         supplierAccountNumber: String, mcon: Context): LiveData<ApiResponse> {
         return flow {
             logger("Payment Fragment", payment.toString())
             emit(ApiResponse.Loading(_data = null, isLoading = true)) // 1. Loading State

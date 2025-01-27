@@ -1,22 +1,37 @@
 package za.co.topitup.suppliers.utils
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
+import android.hardware.usb.UsbDevice
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
 import android.os.RemoteException
+import android.util.Log
+import android.widget.Toast
+import com.zj.usbsdk.UsbController
 import wangpos.sdk4.libbasebinder.Printer
 import za.co.topitup.suppliers.R
 import za.co.topitup.suppliers.models.MyItem
 import za.co.topitup.suppliers.models.Payment
+import za.co.topitup.suppliers.models.Retailer
+import za.co.topitup.suppliers.sdk.Command
 import kotlin.concurrent.thread
+
 
 private const val TAG = "Printer"
 
 class Print(appContext: Context){
+    private lateinit var usbCtrl: UsbController
+    private   var dev: UsbDevice? = null
+
+
+    private val ACTION_USB_PERMISSION = "za.co.topitup.suppliers.USB_PERMISSION"
 
     private val center = Printer.Align.CENTER
-//    private val right = Printer.Align.RIGHT
+    //    private val right = Printer.Align.RIGHT
     private val left = Printer.Align.LEFT
     private val defaultFont = Printer.Font.DEFAULT
     private val boldFont = Printer.Font.DEFAULT_BOLD
@@ -85,7 +100,7 @@ class Print(appContext: Context){
                 thisPrinter.printPaper(15)
                 thisPrinter.print2StringInLine(
                     "Date", "Time", 1.0f, defaultFont, defaultFontSize,
-                   left, false, true, false
+                    left, false, true, false
                 )
                 thisPrinter.print2StringInLine(
                     date, time, 1.0f, boldFont, defaultFontSize,
@@ -137,8 +152,8 @@ class Print(appContext: Context){
         val phoneNumber = context.getString(R.string.company_phone)
         val reprint = context.getString(R.string.reprintLabel)
         val website = context.getString(R.string.company_website)
-       /* val receiptNumber =
-            context.getString(R.string.receipt_number_label).plus(" ").plus(payment.id)*/
+        /* val receiptNumber =
+             context.getString(R.string.receipt_number_label).plus(" ").plus(payment.id)*/
         val mString = payment.btn_date!!.split(",").toTypedArray()
 
 
@@ -159,79 +174,121 @@ class Print(appContext: Context){
 
         try {
             logger(TAG, "Printing printDefaultReceipt")
-            printer?.printInit()
-            printer?.let { thisPrinter ->
-                thisPrinter.clearPrintDataCache()
-                thisPrinter.printString(supplierName, 30, center, true, false)
-                if (isReprint) {
-                    thisPrinter.printPaper(5)
-                    thisPrinter.printString(reprint, 28, center, false, true)
-                }
-                thisPrinter.printPaper(10)
-               /* thisPrinter.printString(
-                    receiptNumber, boldFont, 28, center,
-                    false, false, false
-                )*/
-                thisPrinter.printPaper(15)
-                thisPrinter.print2StringInLine(
-                    "Date", "Time", 1.0f, defaultFont, defaultFontSize,
-                    left, false, true, false
-                )
-                thisPrinter.print2StringInLine(
-                    date, time, 1.0f, boldFont, defaultFontSize,
-                    left, false, false, false
-                )
-              /*  thisPrinter.print2StringInLine(
-                    "Cashier", cashier, 1.0f, defaultFont,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.printPaper(10)
 
-                thisPrinter.print2StringInLine(
-                    "Account #:", accountNumber, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )*/
-                thisPrinter.print2StringInLine(
-                    "Reference:", reference, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Customer #:", customerNumber, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Shipment #:", shipment, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Driver #:", driver, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Driver Cell #:", drivercell, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Amount:", amount, 1.0f, boldFont,
-                    defaultFontSize, left, true, false, true
-                )
+            if(Retailer.deviceTypeTo.equals("tab")){
 
-                //Footer
-                thisPrinter.printPaper(20)
-                thisPrinter.printString(companyName, 25, center, false, false)
-                thisPrinter.printString(phoneNumber, 28, center, false, false)
-                thisPrinter.printString(website, 25, center, false, false)
+                Log.e("supplier name.......","supplier..........."+supplierName)
 
-                //TODO Update SDK to use this function
-                //printer.printMultiseriateString()
+                Command.ESC_Align[2] = 0x01.toByte()
+                usbCtrl.sendByte( Command.ESC_Align,dev)
+                usbCtrl.sendMsg(supplierName, "GBK", dev)
+                usbCtrl.sendMsg(reprint+"\n", "GBK", dev)
+                Command.ESC_Align[2] = 0x00.toByte()
 
-                thisPrinter.printPaper(80)
+                usbCtrl.sendByte( Command.ESC_Align,dev)
+
+                usbCtrl.sendMsg("Date"+""+getWhiteSpace(32 -8)+"Time", "GBK", dev)
+                usbCtrl.sendMsg(date+""+getWhiteSpace(32-date.length-time.length)+""+time, "GBK", dev)
+                usbCtrl.sendMsg("Reference:"+""+getWhiteSpace(32-10-reference.length)+""+reference, "GBK", dev)
+                usbCtrl.sendMsg("Customer #:"+""+getWhiteSpace(32-11-customerNumber.length)+""+customerNumber, "GBK", dev)
+                usbCtrl.sendMsg("Shipment #:"+""+getWhiteSpace(32-11-shipment.length)+""+shipment, "GBK", dev)
+                usbCtrl.sendMsg("Driver #:"+""+getWhiteSpace(32-9-driver.length)+""+driver, "GBK", dev)
+                usbCtrl.sendMsg("Driver Cell #:"+""+getWhiteSpace(32-14-drivercell.length)+""+drivercell, "GBK", dev)
+                usbCtrl.sendMsg("Amount #:"+""+getWhiteSpace(32-9-amount.length)+""+amount, "GBK", dev)
+
+
+                Command.ESC_Align[2] = 0x01.toByte()
+                usbCtrl.sendByte( Command.ESC_Align,dev)
+                usbCtrl.sendMsg(companyName, "GBK", dev)
+                usbCtrl.sendMsg(phoneNumber, "GBK", dev)
+                usbCtrl.sendMsg(website, "GBK", dev)
+
+                Command.ESC_Align[2] = 0x00.toByte()
+
+
+            }else{
+                printer?.printInit()
+                printer?.let { thisPrinter ->
+                    thisPrinter.clearPrintDataCache()
+                    thisPrinter.printString(supplierName, 30, center, true, false)
+                    if (isReprint) {
+                        thisPrinter.printPaper(5)
+                        thisPrinter.printString(reprint, 28, center, false, true)
+                    }
+                    thisPrinter.printPaper(10)
+                    /* thisPrinter.printString(
+                         receiptNumber, boldFont, 28, center,
+                         false, false, false
+                     )*/
+                    thisPrinter.printPaper(15)
+                    thisPrinter.print2StringInLine(
+                        "Date", "Time", 1.0f, defaultFont, defaultFontSize,
+                        left, false, true, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        date, time, 1.0f, boldFont, defaultFontSize,
+                        left, false, false, false
+                    )
+                    /*  thisPrinter.print2StringInLine(
+                          "Cashier", cashier, 1.0f, defaultFont,
+                          defaultFontSize, left, false, false, false
+                      )
+                      thisPrinter.printPaper(10)
+
+                      thisPrinter.print2StringInLine(
+                          "Account #:", accountNumber, 1.0f, Printer.Font.SANS_SERIF,
+                          defaultFontSize, left, false, false, false
+                      )*/
+                    thisPrinter.print2StringInLine(
+                        "Reference:", reference, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Customer #:", customerNumber, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Shipment #:", shipment, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Driver #:", driver, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Driver Cell #:", drivercell, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Amount:", amount, 1.0f, boldFont,
+                        defaultFontSize, left, true, false, true
+                    )
+
+                    //Footer
+                    thisPrinter.printPaper(20)
+                    thisPrinter.printString(companyName, 25, center, false, false)
+                    thisPrinter.printString(phoneNumber, 28, center, false, false)
+                    thisPrinter.printString(website, 25, center, false, false)
+
+                    //TODO Update SDK to use this function
+                    //printer.printMultiseriateString()
+
+                    thisPrinter.printPaper(80)
+            }
+
             }
         } catch (e: RemoteException) {
             e.printStackTrace()
         }
     }
 
+    fun getWhiteSpace(size: Int): String? {
+        val builder = StringBuilder(size)
+        for (i in 0 until size) {
+            builder.append(' ')
+        }
+        return builder.toString()
+    }
     private fun printDefaultReceiptNew(payment: String, isReprint: Boolean) {
         val defaultFontSize = context.resources.getInteger(R.integer.receipt_default_font_size)
 
@@ -285,9 +342,9 @@ class Print(appContext: Context){
     private fun printReceipt(payment: Payment, bitmap: Bitmap? = null, isReprint: Boolean = false): Int {
         var result = -1
         loop = true
-        
+
         logger(TAG, "Printing printReceipt")
-        
+
         val statusArray = IntArray(1)
         var status: Int = -1
 
@@ -333,42 +390,53 @@ class Print(appContext: Context){
 
         logger(TAG, "Printing printReceipt")
 
-        val statusArray = IntArray(1)
-        var status: Int = -1
-
-        try {
-            status = printer?.getPrinterStatus(statusArray) ?: -1
-            logger(TAG, "Print Receipt Status: $status")
-            logger(TAG, "Print Receipt StatusArray: ${statusArray[0]}")
-        } catch (e: RemoteException) {
-            e.printStackTrace()
-        }
-
-        if (status == 0){
-            if (statusArray[0] == 138) {
-                result = statusArray[0]
-                return result
+        if(Retailer.deviceTypeTo.equals("tab")){
+            val count = if (isReprint) 1 else 2
+            for (i in 1..count) {
+                    if (bitmap == null) {
+                        printSupplierDefaultReceipt(payment, isReprint)
+                    } else {
+                        printBitmapReceipt(bitmap)
+                    }
             }
-        } else {
-            logger(TAG, "Print Receipt: Failed to communicate with the printer.")
-            return status
-        }
+        }else {
+            val statusArray = IntArray(1)
+            var status: Int = -1
 
-        //todo Print two copies if not reprint
-        val count  = if (isReprint) 1 else 2
-        for (i in 1..count) {
-            if (printerExists) {
-                if (bitmap == null) {
-                    printSupplierDefaultReceipt(payment, isReprint)
-                } else {
-                    printBitmapReceipt(bitmap)
+            try {
+                status = printer?.getPrinterStatus(statusArray) ?: -1
+                logger(TAG, "Print Receipt Status: $status")
+                logger(TAG, "Print Receipt StatusArray: ${statusArray[0]}")
+            } catch (e: RemoteException) {
+                e.printStackTrace()
+            }
+
+            if (status == 0) {
+                if (statusArray[0] == 138) {
+                    result = statusArray[0]
+                    return result
                 }
-                result = printer?.printFinish() ?: -1
+            } else {
+                logger(TAG, "Print Receipt: Failed to communicate with the printer.")
+                return status
             }
-        }
 
-        if (result == 0) {
-            loop = false
+            //todo Print two copies if not reprint
+            val count = if (isReprint) 1 else 2
+            for (i in 1..count) {
+                if (printerExists) {
+                    if (bitmap == null) {
+                        printSupplierDefaultReceipt(payment, isReprint)
+                    } else {
+                        printBitmapReceipt(bitmap)
+                    }
+                    result = printer?.printFinish() ?: -1
+                }
+            }
+
+            if (result == 0) {
+                loop = false
+            }
         }
         return result
     }
@@ -488,7 +556,8 @@ class Print(appContext: Context){
                 }*/
                 try {
                     logger(TAG, "Printing inner class")
-                   result = printReceipt(_payment, _bitmap, _isReprint)
+
+                    result = printReceipt(_payment, _bitmap, _isReprint)
 
                     //print end reserve height
                     //result = printer.printPaper(100)
@@ -517,6 +586,87 @@ class Print(appContext: Context){
         }
     }
 
+    private fun printWithUsb(context :Context):Int{
+        val uInfor = Array(8) { IntArray(2) }
+
+         usbCtrl = UsbController(context as Activity, mHandler1)
+        uInfor[0][0] = 0x1CBE
+        uInfor[0][1] = 0x0003
+        uInfor[1][0] = 0x1CB0
+        uInfor[1][1] = 0x0003
+        uInfor[2][0] = 0x0483
+        uInfor[2][1] = 0x5740
+        uInfor[3][0] = 0x0493
+        uInfor[3][1] = 0x8760
+        uInfor[4][0] = 0x0416
+        uInfor[4][1] = 0x5011
+        uInfor[5][0] = 0x0416
+        uInfor[5][1] = 0xAABB
+        uInfor[6][0] = 0x1659
+        uInfor[6][1] = 0x8965
+        uInfor[7][0] = 0x0483
+        uInfor[7][1] = 0x5741
+
+        usbCtrl.close()
+        for (i in 0 until 8) {
+            Log.e("inside usb","usb pronter for........")
+            dev = usbCtrl.getDev(uInfor[i][0], uInfor[i][1])
+            if (dev != null) break
+        }
+
+        if (dev != null) {
+
+
+            if (!usbCtrl.isHasPermission(dev)) {
+//                usbCtrl.getPermission(dev)
+                context.runOnUiThread {
+                    Log.i(TAG, "runOnUiThread")
+                    Toast.makeText(context, "Please provide usb permission", Toast.LENGTH_SHORT).show()
+
+                }
+                return 0
+            } else {
+               /* val handler = Handler(Looper.getMainLooper())
+                handler.post {
+                    context.toast("obtaining USB device access permissions success")
+                }
+                loop = false*/
+                return 1
+
+            }
+
+        } else {
+            context.runOnUiThread {
+                Log.i(TAG, "runOnUiThread")
+                Toast.makeText(context, "Please Connect Usb device", Toast.LENGTH_SHORT).show()
+
+            }
+            return 2
+
+
+        }
+    }
+    @SuppressLint("HandlerLeak")
+    val mHandler1: Handler = object : Handler() {
+        override fun handleMessage(msg: Message) {
+
+            when (msg.what) {
+                UsbController.USB_CONNECTED -> {
+
+                    Toast.makeText(context, "usb connected", Toast.LENGTH_LONG)
+                        .show()
+                }
+                else -> {
+
+                    Toast.makeText(
+                        context,
+                        "usb not connected..." + msg.what,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
 
     inner class PrintSupplierReceipt(payment: MyItem, bitmap: Bitmap? = null, isReprint: Boolean = false) : Thread() {
         private val _payment = payment
@@ -536,27 +686,38 @@ class Print(appContext: Context){
                     e.printStackTrace()
                 }*/
                 try {
-                    logger(TAG, "Printing inner class")
-                    result = printSupplierReceipt(_payment, _bitmap, _isReprint)
+                    logger(TAG, "Printing inner class"+Retailer.deviceTypeTo)
+                    if(Retailer.deviceTypeTo.equals("tab")){
+                        var usbStatus:Int=printWithUsb(context)
 
-                    //print end reserve height
-                    //result = printer.printPaper(100)
-                    logger(TAG, "Printing Result = $result")
-                    if (result == 138) {
-                        val handler = Handler(Looper.getMainLooper())
-                        handler.post {
-                            context.toast("Check Paper!")
+                        if(usbStatus == 1){
+                            result = printSupplierReceipt(_payment, _bitmap, _isReprint)
+
                         }
-                        loop = false
+
                         return
-                    }
-                    else if (result != 0)  {
-                        val handler = Handler(Looper.getMainLooper())
-                        handler.post {
-                            context.toast("An error occurred while printing. Error Code: $result")
+                    }else {
+                        result = printSupplierReceipt(_payment, _bitmap, _isReprint)
+                        //print end reserve height
+                        //result = printer.printPaper(100)
+//                    logger(TAG, "Printing Result = $result")
+
+                        if (result == 138) {
+                            val handler = Handler(Looper.getMainLooper())
+                            handler.post {
+                                context.toast("Check Paper!")
+
+                            }
+                            loop = false
+                            return
+                        } else if (result != 0) {
+                            val handler = Handler(Looper.getMainLooper())
+                            handler.post {
+                                context.toast("An error occurred while printing. Error Code: $result")
+                            }
+                            loop = false
+                            return
                         }
-                        loop = false
-                        return
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

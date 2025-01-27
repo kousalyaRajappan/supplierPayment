@@ -16,12 +16,12 @@ import kotlin.collections.ArrayList
 
 class HistoryViewModell : ViewModel() {
 
-     lateinit var  livepaymentlist: MutableLiveData<ArrayList<MyItem>>
+     lateinit var  livepaymentlist: MutableLiveData<ArrayList<MyItem>?>
     init {
 
         livepaymentlist = MutableLiveData()
     }
-    fun getLivePaymentObserver():MutableLiveData<ArrayList<MyItem>>{
+    fun getLivePaymentObserver(): MutableLiveData<ArrayList<MyItem>?> {
 
         return  livepaymentlist
     }

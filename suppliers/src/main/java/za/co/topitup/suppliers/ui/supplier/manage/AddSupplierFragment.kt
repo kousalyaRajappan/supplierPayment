@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.SearchView
-import androidx.appcompat.R
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.MutableLiveData
@@ -68,10 +67,10 @@ class AddSupplierFragment : Fragment() {
         val spinnerAdapter =
             ArrayAdapter(
                 requireContext(),
-                R.layout.support_simple_spinner_dropdown_item,
+                androidx.appcompat.R.layout.support_simple_spinner_dropdown_item,
                 categories)
         // Set layout to use when the list of choices appear
-        spinnerAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item)
+        spinnerAdapter.setDropDownViewResource(androidx.appcompat.R.layout.support_simple_spinner_dropdown_item)
 
         val recyclerViewAdapter = AddSupplierRecyclerViewAdapter(
                 // Add Button onClickListener
@@ -114,7 +113,6 @@ class AddSupplierFragment : Fragment() {
                     name = newText
                 }
                 recyclerViewAdapter.filter.filter("name:$name:type:$category")
-
                 return true
             }
         })

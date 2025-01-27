@@ -49,7 +49,6 @@ class SupplierDatabaseOperations {
         suppliers.forEach {
 
             val supplierRealm = SupplierRealm()
-
             supplierRealm.id = it.id
             supplierRealm.name = it.name
             supplierRealm.category = it.category

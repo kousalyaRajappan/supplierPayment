@@ -111,7 +111,6 @@ class PaymentFragmentPeninsula : Fragment(){
             } else {
                 binding.root.hideKeyboard()
                 logger(TAG, payment.toString())
-//                showReceiptDialog()
           paymentViewModel.sendPensuliaPaymentToApi(
                    payment,
                     supplierId,
@@ -119,26 +118,20 @@ class PaymentFragmentPeninsula : Fragment(){
                     requireContext()
                 )
                     .observe(viewLifecycleOwner) { paymentResult ->
-
                         if (paymentResult.status == ApiStatus.LOADING) {
                             binding.paymentProgressBar.visibility = View.VISIBLE
                             binding.cancelButton.isEnabled = false
                             binding.payButton.isEnabled = false
-
                         }
                         if (paymentResult.status == ApiStatus.SUCCESS) {
                             logger(TAG, "Payment Result in Fragment: ${paymentResult.message}")
                             binding.paymentProgressBar.visibility = View.INVISIBLE
-//                            showReceiptDialog()
                             Handler(Looper.getMainLooper()).postDelayed(
                                 {
                                     parentFragmentManager.popBackStack()
                                 },
-                                1000 // value in milliseconds
+                                3000 // value in milliseconds
                             )
-
-
-
                             showReceiptDialog()
 
                         }
@@ -161,7 +154,6 @@ class PaymentFragmentPeninsula : Fragment(){
             }
         }
 /*
-
         paymentViewModel.status.observe(viewLifecycleOwner) {
             if (it) {
                 parentFragmentManager.popBackStack()
@@ -179,7 +171,6 @@ class PaymentFragmentPeninsula : Fragment(){
 
         binding.supplierNameTextView.text = supplierName
         binding.accountNumberTextView.text = supplierAccountNumber
-
         binding.cancelButton.setOnClickListener {
             parentFragmentManager.popBackStack()
         }

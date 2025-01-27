@@ -9,6 +9,12 @@ object Constants {
     //TODO Change to actual production URLs
     const val PROD_ENDPOINT_BASE_URL = "http://tx.topitup.co.za:25812/"
     const val PROD_LOGO_BASE_URL = "https://admin.topitup.co.za/logos"
+
+
+    const val PROD_ENDPOINT_BASE_URL_TX1 = "http://tx1.topitup.co.za:25812/"
+
+    const val PROD_ENDPOINT_BASE_URL_TX2 = "http://tx2.topitup.co.za:25812/"
+
     var RETAILER_ID = ""
 
     const val ApiResponse = ""
@@ -24,5 +30,6 @@ object Constants {
         9 to "Western Cape",
 
     )
+
 
 }

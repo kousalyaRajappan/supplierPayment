@@ -41,7 +41,6 @@ fun checkApiResponse(response: Response<*>) : ApiResponse{
 
 fun checkApiResponsePayment(response: Call<ResponseBody>) : ApiResponse{
 
-    Log.e("response" ,"response in ckeck api"+response.toString())
     return if (!response.equals("")) {
 
 
@@ -57,7 +56,6 @@ fun checkApiResponsePayment(response: Call<ResponseBody>) : ApiResponse{
     }
 }
 fun checkApiResponsePeninsula(response: String) : ApiResponse{
-    Log.e("response body",".....before..."+response)
 
 
     return if (!response.equals("")) {
