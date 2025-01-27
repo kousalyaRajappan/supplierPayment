@@ -12,7 +12,6 @@ object Retailer {
 
     lateinit var licence: String
     private set
-
     lateinit var posUserId: String
     private set
 
@@ -34,6 +33,10 @@ object Retailer {
     private set
 
     lateinit var deviceTypeTo: String
+
+        private set
+
+    lateinit var connected: String
         private set
 
 
@@ -41,7 +44,7 @@ object Retailer {
 
 
     fun create(id: String, licence: String, posUserId: String, deviceType: String,
-               liveEnvironment: String) {
+               liveEnvironment: String,connected:String) {
         this.id = id
         this.licence = licence
         this.posUserId = posUserId
@@ -49,6 +52,7 @@ object Retailer {
         this.liveEnvironment = liveEnvironment
         var baseUrl: String =""
         var logoUrl: String =""
+        var connecectedType =connected;
 
 
         if (liveEnvironment.contains("LIVE", ignoreCase = true)){
@@ -78,6 +82,7 @@ object Retailer {
         this.endpointBaseURL = baseUrl
         this.logoBaseURL = logoUrl
 
+        this.connected = connecectedType
 
 
         var device :String = ""

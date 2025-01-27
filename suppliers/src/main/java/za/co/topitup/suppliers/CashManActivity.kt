@@ -1,12 +1,21 @@
 package za.co.topitup.suppliers
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Dialog
+import android.bluetooth.BluetoothAdapter
+import android.content.Context
+import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.Message
 import android.util.Log
 import android.view.View
 import android.view.Window
@@ -14,6 +23,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -28,6 +38,11 @@ import io.realm.BuildConfig
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import za.co.topitup.suppliers.BuildConfig.DEBUG
+import za.co.topitup.suppliers.bluetooth.BluetoothService
+import za.co.topitup.suppliers.bluetooth.DeviceListActivity
+import za.co.topitup.suppliers.bluetooth.Main_Activity.MESSAGE_STATE_CHANGE
+import za.co.topitup.suppliers.command.sdk.PrinterCommand
 import za.co.topitup.suppliers.database.SupplierDatabaseOperations
 import za.co.topitup.suppliers.databinding.ActivityCashManBinding
 import za.co.topitup.suppliers.models.MyItem
@@ -58,6 +73,7 @@ import java.util.*
  * * [retailerId] of type [String]
  * * [liveEnv] of type [Boolean]
  */
+@SuppressLint("HandlerLeak")
 class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     ReceiptDialogFragment.ReceiptDialogListener {
 
@@ -75,6 +91,10 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     private var locationEnabled: Boolean = true
 
     lateinit var printer: Print
+     val REQUEST_ENABLE_BT: Int = 2
+    var mService: BluetoothService? = null
+     val REQUEST_CONNECT_DEVICE: Int = 1
+    private val REQUEST_BLUETOOTH_PERMISSIONS = 121
 
     private lateinit var licence: String
     private lateinit var posUser: String
@@ -86,6 +106,9 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     private var liveEnv: Boolean = false
     private var liveEnv1: String = "false"
     private var loginPass: String = ""
+    private var connected:String=""
+    var bluetoothMsg: String = ""
+    val CHINESE: String = "GBK"
 
 
     private val supplierViewModel: SupplierViewModel by viewModels()
@@ -95,10 +118,80 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
     private lateinit var tiu_title_outlet: TextView
     private lateinit var txt_version: TextView
+    var mBluetoothAdapter: BluetoothAdapter? = null
+
+    var isBluetoothConnected: Boolean = false
 
 
-     lateinit var usbDeviceReceiver: UsbDeviceReceiver
+    lateinit var usbDeviceReceiver: UsbDeviceReceiver
+    @SuppressLint("HandlerLeak")
+    val mHandler: Handler = object : Handler() {
+        override fun handleMessage(msg: Message) {
 
+            when (msg.what) {
+                MESSAGE_STATE_CHANGE -> {
+                    if (DEBUG) Log.i(
+                        "TAG",
+                        "MESSAGE_STATE_CHANGE: " + msg.arg1
+                    )
+                    when (msg.arg1) {
+                        BluetoothService.STATE_CONNECTED -> {
+                            Toast.makeText(
+                                this@CashManActivity,
+                                "bluetooth connected",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+
+                            isBluetoothConnected = true
+                            if (bluetoothMsg != "") {
+                                sendDataByte(
+                                    PrinterCommand.POS_Print_Text(
+                                       bluetoothMsg,
+                                        CHINESE,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ), this@CashManActivity
+                                )
+                                sendDataByte(
+                                    PrinterCommand.POS_Set_Cut(
+                                        1
+                                    ), this@CashManActivity
+                                )
+                                sendDataByte(
+                                    PrinterCommand.POS_Set_PrtInit(),
+                                    this@CashManActivity
+                                )
+                            }
+                        }
+
+                        BluetoothService.STATE_CONNECTING -> {
+                            isBluetoothConnected = false
+                            Toast.makeText(
+                                this@CashManActivity,
+                                "bluetooth connecting",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+
+                        BluetoothService.STATE_LISTEN -> {
+                            isBluetoothConnected = false
+                            Toast.makeText(
+                                this@CashManActivity,
+                                "bluetooth listen",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+
+                        BluetoothService.STATE_NONE -> isBluetoothConnected =
+                            false
+                    }
+                }
+            }
+        }
+    }
 
 //    private var liveEnv: Boolean = false
 
@@ -122,6 +215,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         deviceType = intent.getStringExtra("deviceType").toString()
         retailerId = intent.getStringExtra("retailerId").toString()
         liveEnv1 = intent.getStringExtra("liveEnv").toString()
+        connected = intent.getStringExtra("connected").toString()
 
 //        loginPass = intent.getStringExtra("password").toString()
 
@@ -131,14 +225,19 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         var testEnv:String = intent.getStringExtra("testEnv").toString()
 
 //        showDialog("licence :  $licence \n posUser : $posUser \n deviceType : $deviceType \n retailer  : $retailerId  \nliveenv : $liveEnv")
-//        Log.e("live env","live............"+deviceType)
-        Retailer.create(retailerId, licence, posUser, deviceType, liveEnv1)
+        Log.e("live env","live......connected......"+connected)
+        Retailer.create(retailerId, licence, posUser, deviceType, liveEnv1,connected)
         Constants.RETAILER_ID = retailerId
 
-        usbDeviceReceiver = UsbDeviceReceiver()
-        val filter = IntentFilter(ACTION_USB_PERMISSION)
+        if(connected.equals("usb")){
+            usbDeviceReceiver = UsbDeviceReceiver()
+            val filter = IntentFilter(ACTION_USB_PERMISSION)
 
-        registerReceiver(usbDeviceReceiver,filter)
+            registerReceiver(usbDeviceReceiver,filter)
+        }else if(connected.equals("bluetooth")){
+            connectBluetooth()
+        }
+
         /* sharedPreferences = AppPreferences(applicationContext)
         //vendorActivated = sharedPreferences.vendorActivated
         sharedPreferences.RETAILERID = retailerId*/
@@ -331,6 +430,156 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         printer = Print(this)
     }
 
+    private fun connectBluetooth() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) === PackageManager.PERMISSION_GRANTED) {
+                // Proceed with Bluetooth operations
+                bluetoothOperation()
+            } else {
+                requestBluetoothPermissions()
+            }
+        } else {
+            // For older Android versions, directly perform Bluetooth operations
+            bluetoothOperation()
+        }
+
+    }
+
+
+    @SuppressLint("MissingPermission")
+    fun bluetoothOperation() {
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+        // If the adapter is null, then Bluetooth is not supported
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(this@CashManActivity, "Bluetooth is not available", Toast.LENGTH_LONG)
+                .show()
+            finish()
+
+            //                    rdo_inner.setChecked(true);
+        }
+        if (mBluetoothAdapter?.isEnabled == false) {
+            val enableIntent = Intent(
+                BluetoothAdapter.ACTION_REQUEST_ENABLE
+            )
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+            startActivityForResult(
+                enableIntent,
+                REQUEST_ENABLE_BT
+            )
+        } else {
+            if (mService == null) {
+               mService = BluetoothService(
+                    this@CashManActivity,
+                    mHandler
+                )
+            } else {
+//                rdo_inner.setChecked(true);
+            }
+        }
+
+        val serverIntent: Intent = Intent(this@CashManActivity, DeviceListActivity::class.java)
+        startActivityForResult(
+            serverIntent,
+            REQUEST_CONNECT_DEVICE
+        )
+    }
+
+    private fun requestBluetoothPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) !== PackageManager.PERMISSION_GRANTED ||
+                checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) !== PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissions(
+                    arrayOf<String>(
+                        Manifest.permission.BLUETOOTH_CONNECT,
+                        Manifest.permission.BLUETOOTH_SCAN
+                    ),
+                    REQUEST_BLUETOOTH_PERMISSIONS
+                )
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String?>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS) {
+            if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, proceed with Bluetooth operations
+                bluetoothOperation()
+            } else {
+                Toast.makeText(
+                    this,
+                    "Bluetooth permissions are required for this feature",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    @SuppressLint("SuspiciousIndentation")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (DEBUG) {
+            when (requestCode) {
+                REQUEST_CONNECT_DEVICE -> {
+                    // When DeviceListActivity returns with a device to connect
+                    if (resultCode == Activity.RESULT_OK) {
+                        // Get the device MAC address
+                        val address = data?.extras?.getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS)
+                        if (address != null && BluetoothAdapter.checkBluetoothAddress(address)) {
+                            // Get the BluetoothDevice object
+                            val device = mBluetoothAdapter?.getRemoteDevice(address)
+                          /*  val editor = settings.edit()
+                            editor.putString("last_device_address", address)
+                            editor.apply()*/
+
+                            mService?.connect(device)
+                        } else {
+                            // Toast.makeText(this@activity_settings, "result if", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+//                        rdo_inner.isChecked = true
+                        Toast.makeText(this@CashManActivity, "Bluetooth Device Not Found", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                REQUEST_ENABLE_BT -> {
+                    // When the request to enable Bluetooth returns
+                    if (resultCode == Activity.RESULT_OK) {
+                        // Bluetooth is now enabled, so set up a session
+                        mService = BluetoothService(this, mHandler)
+                    } else {
+                        // User did not enable Bluetooth or an error occurred
+                        Log.d("TAG", "BT not enabled")
+                        Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
+            }
+        }
+    }
+    fun sendDataByte(data: ByteArray, context: Context) {
+        // Check if the BluetoothService state is connected
+        if (mService?.state != BluetoothService.STATE_CONNECTED) {
+            Toast.makeText(context, R.string.not_connected, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Write data to the BluetoothService
+        mService?.write(data)
+    }
+
     override fun navigateTo(fragment: Fragment, addToBackstack: Boolean) {
         val transaction = supportFragmentManager
             .beginTransaction()
@@ -370,7 +619,11 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
     private fun showExitDialog() {
 
-        unregisterReceiver(usbDeviceReceiver)
+        if(connected.equals("usb")) {
+            unregisterReceiver(usbDeviceReceiver)
+
+        }
+
         finish()
        /* MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.exitDialogTitle))

@@ -13,6 +13,7 @@ import android.util.Log
 import android.widget.Toast
 import com.zj.usbsdk.UsbController
 import wangpos.sdk4.libbasebinder.Printer
+import za.co.topitup.suppliers.CashManActivity
 import za.co.topitup.suppliers.R
 import za.co.topitup.suppliers.models.MyItem
 import za.co.topitup.suppliers.models.Payment
@@ -175,35 +176,92 @@ class Print(appContext: Context){
         try {
             logger(TAG, "Printing printDefaultReceipt")
 
-            if(Retailer.deviceTypeTo.equals("tab")){
+            if(Retailer.deviceTypeTo.equals("Mobile")){
 
-                Log.e("supplier name.......","supplier..........."+supplierName)
+                if(Retailer.connected.equals("usb")){
+                    Log.e("supplier name.......","supplier..........."+supplierName)
 
-                Command.ESC_Align[2] = 0x01.toByte()
-                usbCtrl.sendByte( Command.ESC_Align,dev)
-                usbCtrl.sendMsg(supplierName, "GBK", dev)
-                usbCtrl.sendMsg(reprint+"\n", "GBK", dev)
-                Command.ESC_Align[2] = 0x00.toByte()
+                    Command.ESC_Align[2] = 0x01.toByte()
+                    usbCtrl.sendByte( Command.ESC_Align,dev)
+                    usbCtrl.sendMsg(supplierName, "GBK", dev)
+                    usbCtrl.sendMsg(reprint+"\n", "GBK", dev)
+                    Command.ESC_Align[2] = 0x00.toByte()
 
-                usbCtrl.sendByte( Command.ESC_Align,dev)
+                    usbCtrl.sendByte( Command.ESC_Align,dev)
 
-                usbCtrl.sendMsg("Date"+""+getWhiteSpace(32 -8)+"Time", "GBK", dev)
-                usbCtrl.sendMsg(date+""+getWhiteSpace(32-date.length-time.length)+""+time, "GBK", dev)
-                usbCtrl.sendMsg("Reference:"+""+getWhiteSpace(32-10-reference.length)+""+reference, "GBK", dev)
-                usbCtrl.sendMsg("Customer #:"+""+getWhiteSpace(32-11-customerNumber.length)+""+customerNumber, "GBK", dev)
-                usbCtrl.sendMsg("Shipment #:"+""+getWhiteSpace(32-11-shipment.length)+""+shipment, "GBK", dev)
-                usbCtrl.sendMsg("Driver #:"+""+getWhiteSpace(32-9-driver.length)+""+driver, "GBK", dev)
-                usbCtrl.sendMsg("Driver Cell #:"+""+getWhiteSpace(32-14-drivercell.length)+""+drivercell, "GBK", dev)
-                usbCtrl.sendMsg("Amount #:"+""+getWhiteSpace(32-9-amount.length)+""+amount, "GBK", dev)
+                    usbCtrl.sendMsg("Date"+""+getWhiteSpace(32 -8)+"Time", "GBK", dev)
+                    usbCtrl.sendMsg(date+""+getWhiteSpace(32-date.length-time.length)+""+time, "GBK", dev)
+                    usbCtrl.sendMsg("Reference:"+""+getWhiteSpace(32-10-reference.length)+""+reference, "GBK", dev)
+                    usbCtrl.sendMsg("Customer #:"+""+getWhiteSpace(32-11-customerNumber.length)+""+customerNumber, "GBK", dev)
+                    usbCtrl.sendMsg("Shipment #:"+""+getWhiteSpace(32-11-shipment.length)+""+shipment, "GBK", dev)
+                    usbCtrl.sendMsg("Driver #:"+""+getWhiteSpace(32-9-driver.length)+""+driver, "GBK", dev)
+                    usbCtrl.sendMsg("Driver Cell #:"+""+getWhiteSpace(32-14-drivercell.length)+""+drivercell, "GBK", dev)
+                    usbCtrl.sendMsg("Amount #:"+""+getWhiteSpace(32-9-amount.length)+""+amount, "GBK", dev)
 
 
-                Command.ESC_Align[2] = 0x01.toByte()
-                usbCtrl.sendByte( Command.ESC_Align,dev)
-                usbCtrl.sendMsg(companyName, "GBK", dev)
-                usbCtrl.sendMsg(phoneNumber, "GBK", dev)
-                usbCtrl.sendMsg(website, "GBK", dev)
+                    Command.ESC_Align[2] = 0x01.toByte()
+                    usbCtrl.sendByte( Command.ESC_Align,dev)
+                    usbCtrl.sendMsg(companyName, "GBK", dev)
+                    usbCtrl.sendMsg(phoneNumber, "GBK", dev)
+                    usbCtrl.sendMsg(website, "GBK", dev)
 
-                Command.ESC_Align[2] = 0x00.toByte()
+                    Command.ESC_Align[2] = 0x00.toByte()
+                }else{
+
+                        try {
+
+                            Command.ESC_Align[2] = 0x01.toByte()
+                            usbCtrl.sendByte( Command.ESC_Align,dev)
+                            usbCtrl.sendMsg(supplierName, "GBK", dev)
+                            usbCtrl.sendMsg(reprint+"\n", "GBK", dev)
+                            Command.ESC_Align[2] = 0x00.toByte()
+
+                            usbCtrl.sendByte( Command.ESC_Align,dev)
+
+
+                            Command.ESC_Align[2] = 1
+                            (context as? CashManActivity)?.sendDataByte(Command.ESC_Align, context)
+
+
+                            val Namebytes = supplierName.toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(Namebytes, context)
+
+
+                            val reprintbyte = reprint.toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(reprintbyte, context)
+
+                            Command.ESC_Align[2] = 0
+                            (context as? CashManActivity)?.sendDataByte(Command.ESC_Align, context)
+
+                            val dateTime = "Date" + getWhiteSpace(24) + "Time"
+                            val dateTimebytes = dateTime.toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(dateTimebytes, context)
+
+
+                            val dateTimeSol = date + getWhiteSpace((32 - date.length) - time.length) + time
+                            val bytes4 = dateTimeSol.toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(bytes4, context)
+
+
+                            val referenceByte = ("Reference:" + getWhiteSpace(22 - reference.length) + reference).toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(referenceByte, context)
+
+                            val customerText = "Customer #:" + getWhiteSpace(21 - customerNumber.length) + customerNumber
+                            val customerbytes = customerText.toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(customerbytes, context)
+
+
+                            val shipmentByte = ("Shipment #:" + getWhiteSpace(21 - shipment.length) + shipment).toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(shipmentByte, context)
+
+
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
+
+                }
+
 
 
             }else{

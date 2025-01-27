@@ -123,6 +123,8 @@ dependencies {
 
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation files('libs/anko-0.10.8.aar')
+    implementation files('libs/core-3.3.0.jar')
+
     //implementation 'org.jetbrains.anko:anko-design:0.10.8'
   //  implementation "org.jetbrains.anko:anko-design:0.10.8"
 
