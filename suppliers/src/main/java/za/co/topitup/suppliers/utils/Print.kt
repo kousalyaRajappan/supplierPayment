@@ -255,6 +255,38 @@ class Print(appContext: Context){
                             (context as? CashManActivity)?.sendDataByte(shipmentByte, context)
 
 
+                            val DriverByte = ("Driver #:"+""+getWhiteSpace(32-9-driver.length)+""+driver).toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(DriverByte, context)
+
+                            val DriverCellByte = ("Driver Cell #:"+""+getWhiteSpace(32-14-drivercell.length)+""+drivercell).toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(DriverCellByte, context)
+
+                            val AmountByte = ("Amount #:"+""+getWhiteSpace(32-9-amount.length)+""+amount).toByteArray(Charsets.UTF_8)
+                            (context as? CashManActivity)?.sendDataByte(AmountByte, context)
+
+
+
+
+
+                            Command.ESC_Align[2] = 0x01.toByte()
+
+                            (context as? CashManActivity)?.sendDataByte(Command.ESC_Align, context)
+                            val companyNameByte = ("Amount #:"+""+getWhiteSpace(32-9-amount.length)+""+amount).toByteArray(Charsets.UTF_8)
+
+                            (context as? CashManActivity)?.sendDataByte(companyNameByte, context)
+                            val phoneNumberByte = ("Amount #:"+""+getWhiteSpace(32-9-amount.length)+""+amount).toByteArray(Charsets.UTF_8)
+
+                            (context as? CashManActivity)?.sendDataByte(phoneNumberByte, context)
+                            val websiteByte = ("Amount #:"+""+getWhiteSpace(32-9-amount.length)+""+amount).toByteArray(Charsets.UTF_8)
+
+                            (context as? CashManActivity)?.sendDataByte(websiteByte, context)
+
+
+
+                            Command.ESC_Align[2] = 0x00.toByte()
+                            (context as? CashManActivity)?.sendDataByte(Command.ESC_Align, context)
+
+
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }

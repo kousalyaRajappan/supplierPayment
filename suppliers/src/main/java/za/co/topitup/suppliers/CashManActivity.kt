@@ -60,7 +60,7 @@ import za.co.topitup.suppliers.utils.Print
 import za.co.topitup.suppliers.utils.toast
 import java.text.SimpleDateFormat
 import java.util.Calendar
-
+import android.bluetooth.BluetoothDevice
 
 //const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
 
@@ -437,8 +437,16 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     }
 
     private fun connectBluetooth() {
+
         if (lastDeviceAddress != null) {
-            bluetoothOperation()
+
+            if (mBluetoothAdapter == null) {
+                mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+            }
+
+            bluetoothMsg = ""
+            val device: BluetoothDevice = mBluetoothAdapter!!.getRemoteDevice(lastDeviceAddress)
+            mService?.connect(device)
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) === PackageManager.PERMISSION_GRANTED) {
