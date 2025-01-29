@@ -8,7 +8,6 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -60,7 +59,7 @@ import za.co.topitup.suppliers.utils.Constants
 import za.co.topitup.suppliers.utils.Print
 import za.co.topitup.suppliers.utils.toast
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
 
 
 //const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
@@ -91,9 +90,9 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     private var locationEnabled: Boolean = true
 
     lateinit var printer: Print
-     val REQUEST_ENABLE_BT: Int = 2
+    val REQUEST_ENABLE_BT: Int = 2
     var mService: BluetoothService? = null
-     val REQUEST_CONNECT_DEVICE: Int = 1
+    val REQUEST_CONNECT_DEVICE: Int = 1
     private val REQUEST_BLUETOOTH_PERMISSIONS = 121
 
     private lateinit var licence: String
@@ -106,7 +105,8 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     private var liveEnv: Boolean = false
     private var liveEnv1: String = "false"
     private var loginPass: String = ""
-    private var connected:String=""
+    private var connected: String = ""
+    private var lastDeviceAddress: String = ""
     var bluetoothMsg: String = ""
     val CHINESE: String = "GBK"
 
@@ -124,6 +124,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
 
     lateinit var usbDeviceReceiver: UsbDeviceReceiver
+
     @SuppressLint("HandlerLeak")
     val mHandler: Handler = object : Handler() {
         override fun handleMessage(msg: Message) {
@@ -147,7 +148,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                             if (bluetoothMsg != "") {
                                 sendDataByte(
                                     PrinterCommand.POS_Print_Text(
-                                       bluetoothMsg,
+                                        bluetoothMsg,
                                         CHINESE,
                                         0,
                                         0,
@@ -197,11 +198,12 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
 //    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
-    private val onBackPressedCallback: OnBackPressedCallback = object : OnBackPressedCallback(true) {
-        override fun handleOnBackPressed() {
-            showExitDialog()
+    private val onBackPressedCallback: OnBackPressedCallback =
+        object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                showExitDialog()
+            }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -216,25 +218,25 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         retailerId = intent.getStringExtra("retailerId").toString()
         liveEnv1 = intent.getStringExtra("liveEnv").toString()
         connected = intent.getStringExtra("connected").toString()
+        lastDeviceAddress = intent.getStringExtra("lastDeviceAddress").toString()
 
 //        loginPass = intent.getStringExtra("password").toString()
 
 
-
         loginPass = "1111"
-        var testEnv:String = intent.getStringExtra("testEnv").toString()
+        var testEnv: String = intent.getStringExtra("testEnv").toString()
 
 //        showDialog("licence :  $licence \n posUser : $posUser \n deviceType : $deviceType \n retailer  : $retailerId  \nliveenv : $liveEnv")
-        Log.e("live env","live......connected......"+connected)
-        Retailer.create(retailerId, licence, posUser, deviceType, liveEnv1,connected)
+        Log.e("live env", "live......connected......" + connected)
+        Retailer.create(retailerId, licence, posUser, deviceType, liveEnv1, connected)
         Constants.RETAILER_ID = retailerId
 
-        if(connected.equals("usb")){
+        if (connected.equals("usb")) {
             usbDeviceReceiver = UsbDeviceReceiver()
             val filter = IntentFilter(ACTION_USB_PERMISSION)
 
-            registerReceiver(usbDeviceReceiver,filter)
-        }else if(connected.equals("bluetooth")){
+            registerReceiver(usbDeviceReceiver, filter)
+        } else if (connected.equals("bluetooth")) {
             connectBluetooth()
         }
 
@@ -292,7 +294,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         tiu_title_balance_cash = findViewById(R.id.tiu_title_balance_cash) as TextView
 
         //Toast.makeText(activity_main.this, "in="+TIMEOUT_IN_MILLI,Toast.LENGTH_LONG).show();
-         tiu_title_outlet = findViewById(R.id.tiu_title_outlet) as TextView
+        tiu_title_outlet = findViewById(R.id.tiu_title_outlet) as TextView
         //        tiu_batt = (TextView) findViewById(R.id.tiu_batt);
         val tiu_user_name = findViewById(R.id.tiu_user_name) as TextView
 
@@ -308,9 +310,9 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         } catch (e: PackageManager.NameNotFoundException) {
             e.printStackTrace()
         }
-/*
-        tiu_user_name.setText(user_name)
-        tiu_title_outlet.setText(account_number)*/
+        /*
+                tiu_user_name.setText(user_name)
+                tiu_title_outlet.setText(account_number)*/
 
         val c = Calendar.getInstance()
         val sdf = SimpleDateFormat("dd MMM YY  @  HH:mm")
@@ -341,10 +343,12 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                             navigateTo(SupplierFragment(), false)
                             addSupplierButton.isVisible = true
                         }
+
                         tab2Text -> {
                             navigateTo(AddSupplierFragment(), false)
                             refreshButton.isVisible = true
                         }
+
                         tab3Text -> navigateTo(HistoryFragment(), false)
                     }
                 }
@@ -420,10 +424,12 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                     tabLayout.getTabAt(1)!!.select()
                     true
                 }
+
                 R.id.supplierListRefreshButton -> {
                     updateSuppliers()
                     true
                 }
+
                 else -> false
             }
         }
@@ -431,17 +437,20 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     }
 
     private fun connectBluetooth() {
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) === PackageManager.PERMISSION_GRANTED) {
-                // Proceed with Bluetooth operations
-                bluetoothOperation()
-            } else {
-                requestBluetoothPermissions()
-            }
-        } else {
-            // For older Android versions, directly perform Bluetooth operations
+        if (lastDeviceAddress != null) {
             bluetoothOperation()
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) === PackageManager.PERMISSION_GRANTED) {
+                    // Proceed with Bluetooth operations
+                    bluetoothOperation()
+                } else {
+                    requestBluetoothPermissions()
+                }
+            } else {
+                // For older Android versions, directly perform Bluetooth operations
+                bluetoothOperation()
+            }
         }
 
     }
@@ -476,7 +485,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
             )
         } else {
             if (mService == null) {
-               mService = BluetoothService(
+                mService = BluetoothService(
                     this@CashManActivity,
                     mHandler
                 )
@@ -537,13 +546,14 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                     // When DeviceListActivity returns with a device to connect
                     if (resultCode == Activity.RESULT_OK) {
                         // Get the device MAC address
-                        val address = data?.extras?.getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS)
+                        val address =
+                            data?.extras?.getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS)
                         if (address != null && BluetoothAdapter.checkBluetoothAddress(address)) {
                             // Get the BluetoothDevice object
                             val device = mBluetoothAdapter?.getRemoteDevice(address)
-                          /*  val editor = settings.edit()
-                            editor.putString("last_device_address", address)
-                            editor.apply()*/
+                            /*  val editor = settings.edit()
+                              editor.putString("last_device_address", address)
+                              editor.apply()*/
 
                             mService?.connect(device)
                         } else {
@@ -551,9 +561,14 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                         }
                     } else {
 //                        rdo_inner.isChecked = true
-                        Toast.makeText(this@CashManActivity, "Bluetooth Device Not Found", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@CashManActivity,
+                            "Bluetooth Device Not Found",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
+
                 REQUEST_ENABLE_BT -> {
                     // When the request to enable Bluetooth returns
                     if (resultCode == Activity.RESULT_OK) {
@@ -562,13 +577,15 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                     } else {
                         // User did not enable Bluetooth or an error occurred
                         Log.d("TAG", "BT not enabled")
-                        Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT)
+                            .show()
                         finish()
                     }
                 }
             }
         }
     }
+
     fun sendDataByte(data: ByteArray, context: Context) {
         // Check if the BluetoothService state is connected
         if (mService?.state != BluetoothService.STATE_CONNECTED) {
@@ -593,15 +610,14 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     }
 
     private fun updateSuppliers() {
-        Log.e("update suppliers","........update suppliers")
+        Log.e("update suppliers", "........update suppliers")
         val supplierList = SupplierRepository().getSuppliersFromAPI(vendorLatitude, vendorLongitude)
         binding.AppProgressBar.visibility = View.VISIBLE
         supplierList.observe(this@CashManActivity) { suppliersList ->
             lifecycleScope.launch {
                 if (suppliersList[0].id != 0) {
                     SupplierDatabaseOperations().insertSuppliers(suppliersList)
-                }
-                else {
+                } else {
                     toast(getString(R.string.network_error_basic), Toast.LENGTH_LONG)
                 }
                 binding.AppProgressBar.visibility = View.INVISIBLE
@@ -619,18 +635,18 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
     private fun showExitDialog() {
 
-        if(connected.equals("usb")) {
+        if (connected.equals("usb")) {
             unregisterReceiver(usbDeviceReceiver)
 
         }
 
         finish()
-       /* MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.exitDialogTitle))
-            .setMessage(getString(R.string.exitDialogMessage))
-            .setPositiveButton(getString(R.string.dialogPositiveText)) { _, _ -> finish() }
-            .setNegativeButton(getString(R.string.dialogNegativeText), null)
-            .show()*/
+        /* MaterialAlertDialogBuilder(this)
+             .setTitle(getString(R.string.exitDialogTitle))
+             .setMessage(getString(R.string.exitDialogMessage))
+             .setPositiveButton(getString(R.string.dialogPositiveText)) { _, _ -> finish() }
+             .setNegativeButton(getString(R.string.dialogNegativeText), null)
+             .show()*/
     }
 
 //  Location functions
@@ -735,7 +751,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 //    }
 
     /* ----------------------------------------------------------------------------------------- */
-    private fun showDialog(desc :String) {
+    private fun showDialog(desc: String) {
 
         val dialog = Dialog(this@CashManActivity)
         dialog.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
@@ -755,14 +771,15 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
 
     }
+
     fun get_balance() {
-        Log.e("call api","......getBalance...")
+        Log.e("call api", "......getBalance...")
         lifecycleScope.launch(Dispatchers.IO) {
 
             supplierViewModel.getBalanceInfo().collect { result ->
                 if (result.status == ApiStatus.SUCCESS) {
 
-                    Log.e("response","res"+result.data)
+                    Log.e("response", "res" + result.data)
                     val finBalance: fin_balance = result.data as fin_balance
 
 
@@ -775,7 +792,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                     runOnUiThread {
                         tiu_title_balance.text =
                             "Standard R " + finBalance.available_balance
-                        tiu_title_balance_cash.text = " Bills R " +finBalance.balance_cash
+                        tiu_title_balance_cash.text = " Bills R " + finBalance.balance_cash
                         sharedPreferences.accountNumber = finBalance.acn1
                         tiu_title_outlet.setText(sharedPreferences.accountNumber)
                         // Stuff that updates the UI
@@ -792,27 +809,27 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
     private fun get_update_users() {
 
-            val posUsersList = SupplierRepository().getPosuserListAPI()
-            binding.AppProgressBar.visibility = View.VISIBLE
+        val posUsersList = SupplierRepository().getPosuserListAPI()
+        binding.AppProgressBar.visibility = View.VISIBLE
         posUsersList.observe(this@CashManActivity) { posusresList ->
 
-                lifecycleScope.launch {
-                    Log.e("pos users","size...."+posusresList.size)
+            lifecycleScope.launch {
+                Log.e("pos users", "size...." + posusresList.size)
 
-                    for (i in 0 until posusresList.size) {
+                for (i in 0 until posusresList.size) {
 
-                        if(posusresList[i].posuser_id.equals(loginPass)){
-                            Log.e("pos users......."+i,"${posusresList[i].posuser_firstname}size...."+posusresList[i].posuser_id)
-                        }
+                    if (posusresList[i].posuser_id.equals(loginPass)) {
+                        Log.e(
+                            "pos users......." + i,
+                            "${posusresList[i].posuser_firstname}size...." + posusresList[i].posuser_id
+                        )
                     }
+                }
 
 //                    binding.AppProgressBar.visibility = View.INVISIBLE
-                }
             }
         }
-
-
-
+    }
 
 
 }
