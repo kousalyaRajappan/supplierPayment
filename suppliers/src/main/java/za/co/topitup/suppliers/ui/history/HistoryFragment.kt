@@ -108,7 +108,7 @@ class HistoryFragment : Fragment() {
             }else{
 
                 // Showing selected spinner item
-                Toast.makeText(context, "No Rescords Found", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "No Records Found", Toast.LENGTH_LONG).show()
 
 //                Toast.makeText(context,"No Data",Len)
             }

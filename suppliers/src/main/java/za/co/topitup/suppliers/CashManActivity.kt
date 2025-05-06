@@ -3,26 +3,23 @@ package za.co.topitup.suppliers
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.Dialog
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
 import android.util.Log
 import android.view.View
-import android.view.Window
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -58,9 +55,9 @@ import za.co.topitup.suppliers.utils.AppPreferences
 import za.co.topitup.suppliers.utils.Constants
 import za.co.topitup.suppliers.utils.Print
 import za.co.topitup.suppliers.utils.toast
+import java.io.UnsupportedEncodingException
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import android.bluetooth.BluetoothDevice
 
 //const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
 
@@ -145,10 +142,11 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
 
                             isBluetoothConnected = true
-                            if (bluetoothMsg != "") {
+                            val prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE)
+                            prefs.edit().putBoolean("isBluetoothConnected", true).apply()
                                 sendDataByte(
                                     PrinterCommand.POS_Print_Text(
-                                        bluetoothMsg,
+                                        "hi this is gowthami",
                                         CHINESE,
                                         0,
                                         0,
@@ -166,7 +164,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                                     this@CashManActivity
                                 )
                             }
-                        }
+
 
                         BluetoothService.STATE_CONNECTING -> {
                             isBluetoothConnected = false
@@ -237,7 +235,31 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
             registerReceiver(usbDeviceReceiver, filter)
         } else if (connected.equals("bluetooth")) {
-            connectBluetooth()
+            Log.e("live env", "live......connected..111111111111...." + connected)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val hasPermission = ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (!hasPermission) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(
+                            Manifest.permission.BLUETOOTH_CONNECT,
+                            Manifest.permission.BLUETOOTH_SCAN
+                        ),
+                        REQUEST_BLUETOOTH_PERMISSIONS
+                    )
+                } else {
+                    // Permissions already granted, proceed with Bluetooth
+                    connectBluetooth()
+                }
+            } else {
+                // For Android < 12, no runtime permissions needed
+                connectBluetooth()
+            }
+
         }
 
         /* sharedPreferences = AppPreferences(applicationContext)
@@ -374,29 +396,6 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         vendorLongitude = sharedPreferences.vendorLongitude.toString()
 
 
-//        fusedLocationProviderClient =
-//            LocationServices.getFusedLocationProviderClient(applicationContext)
-//        if (vendorLatitude == "0.0" || vendorLongitude == "0.0") {
-//
-//            //TODO sharedPreferences location Enabled
-//
-//            if (permissionApproved()) {
-//                getCurrentLocation()
-//            } else {
-//                requestPermissions()
-//            }
-//        }
-
-//        TODO run this after getting location
-//         TODO only update data
-//        val supplierList = SupplierRepository().getSuppliers(vendorLatitude, vendorLongitude)
-//        supplierList.observe(this) { suppliersList ->
-//            lifecycleScope.launch {
-//                SupplierDatabaseOperations().insertSuppliers(suppliersList)
-//            }
-//        }
-//
-
         //topAppBar
         topAppBar.setNavigationOnClickListener {
             //onBackPressed()
@@ -439,20 +438,47 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
     private fun connectBluetooth() {
 
         if (lastDeviceAddress != null) {
+            val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+            val prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE)
+           val isBluetoothConnected = prefs.getBoolean("isBluetoothConnected", false)
+             var blueState: Int = 0
 
-            if (mBluetoothAdapter == null) {
+            if (mService != null) {
+                 blueState = mService!!.state
+                Log.e("live env", "live...$isBluetoothConnected...connected..2222222222..$blueState.." )
+
+            }
+            Log.e("live env", "live...$isBluetoothConnected...connected..2222222222..$blueState.." )
+
+       if (bluetoothAdapter != null && BluetoothAdapter.checkBluetoothAddress(lastDeviceAddress)) {
+        val device = bluetoothAdapter.getRemoteDevice(lastDeviceAddress)
+        mService = BluetoothService(this, mHandler) // if not already initialized
+        mService?.connect(device) // attempt to connect
+        } else {
+        Toast.makeText(this, "Bluetooth device not available", Toast.LENGTH_SHORT).show()
+    }
+
+           /* if (mBluetoothAdapter == null) {
                 mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
             }
 
             bluetoothMsg = ""
+            Log.e("live env", "live......connected..66666666666...." + lastDeviceAddress)
+
             val device: BluetoothDevice = mBluetoothAdapter!!.getRemoteDevice(lastDeviceAddress)
-            mService?.connect(device)
+            mService?.connect(device)*/
         } else {
+            Log.e("live env", "live......connected..3333333333...." + connected)
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) === PackageManager.PERMISSION_GRANTED) {
+                    Log.e("live env", "live......connected..4444444444...." + connected)
+
                     // Proceed with Bluetooth operations
                     bluetoothOperation()
                 } else {
+                    Log.e("live env", "live......connected..5555555555...." + connected)
+
                     requestBluetoothPermissions()
                 }
             } else {
@@ -463,7 +489,33 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
 
     }
 
+    fun SendDataString(data: String, con: Context?) {
 
+        if (mService!!.getState() !== BluetoothService.STATE_CONNECTED) {
+            Toast.makeText(con, R.string.not_connected, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        if (data.length > 0) {
+            try {
+                mService!!.write(data.toByteArray(charset("GBK")))
+            } catch (e: UnsupportedEncodingException) {
+                e.printStackTrace()
+            }
+        }
+    }
+    fun SendDataByte(data: ByteArray?, con: Context?) {
+//        BluetoothService  mServiceNew = new BluetoothService(con, mHandler);
+
+
+        if (mService!!.getState() !== BluetoothService.STATE_CONNECTED) {
+            Toast.makeText(con, R.string.not_connected, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        mService?.write(data)
+    }
     @SuppressLint("MissingPermission")
     fun bluetoothOperation() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -649,136 +701,9 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         }
 
         finish()
-        /* MaterialAlertDialogBuilder(this)
-             .setTitle(getString(R.string.exitDialogTitle))
-             .setMessage(getString(R.string.exitDialogMessage))
-             .setPositiveButton(getString(R.string.dialogPositiveText)) { _, _ -> finish() }
-             .setNegativeButton(getString(R.string.dialogNegativeText), null)
-             .show()*/
     }
-
-//  Location functions
-//  /* ----------------------------------------------------------------------------------------- */
-
-//    private fun getCurrentLocation() {
-//        lifecycleScope.launch(Dispatchers.Default) {
-//            GetLocation(fusedLocationProviderClient, applicationContext)
-//                .fetchUpdates()
-//                .collect { currentLocation ->
-//                    sharedPreferences.vendorLatitude =
-//                        currentLocation.latitude.toString()
-//                    sharedPreferences.vendorLongitude =
-//                        currentLocation.longitude.toString()
-//                    this.cancel("Done")
-//                }
-//        }
-//    }
-
-//    private fun permissionApproved(): Boolean {
-//        return PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
-//            this,
-//            Manifest.permission.ACCESS_FINE_LOCATION
-//        )
-//    }
-
-    // Request Location Permissions
-//    private fun requestPermissions() {
-//        val provideRationale = permissionApproved()
-//
-//        // If the user denied a previous request, but didn't check "Don't ask again", provide
-//        // additional rationale.
-//        if (provideRationale) {
-//            Snackbar.make(
-//                findViewById(R.id.activity_cash_man),
-//                R.string.permission_rationale,
-//                Snackbar.LENGTH_LONG
-//            )
-//                .setAction(R.string.ok) {
-//                    // Request permission
-//                    ActivityCompat.requestPermissions(
-//                        this@CashManActivity,
-//                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-//                        REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
-//                    )
-//                }
-//                .show()
-//        } else {
-//            ActivityCompat.requestPermissions(
-//                this@CashManActivity,
-//                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-//                REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
-//            )
-//        }
-//    }
-
-//    override fun onRequestPermissionsResult(
-//        requestCode: Int,
-//        permissions: Array<String>,
-//        grantResults: IntArray
-//    ) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-//        when (requestCode) {
-//            REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE -> when {
-//                grantResults.isEmpty() ->
-//                    // If user interaction was interrupted, the permission request
-//                    // is cancelled and you receive empty arrays.
-//                    Log.d("Location", "User interaction was cancelled.")
-//
-//                grantResults[0] == PackageManager.PERMISSION_GRANTED ->
-//                    // Permission was granted.
-//                {
-//                    locationEnabled = true
-//                    sharedPreferences.locationEnabled = true
-//                    getCurrentLocation()
-//                }
-//
-//                else -> {
-//                    // Permission denied.
-//                    Snackbar.make(
-//                        findViewById(R.id.activity_cash_man),
-//                        R.string.permission_denied_explanation,
-//                        Snackbar.LENGTH_LONG
-//                    )
-//                        .setAction(R.string.settings) {
-//                            // Build intent that displays the App settings screen.
-//                            val intent = Intent()
-//                            intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-//                            val uri = Uri.fromParts(
-//                                "package",
-//                                BuildConfig.LIBRARY_PACKAGE_NAME,
-//                                null
-//                            )
-//                            intent.data = uri
-//                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-//                            startActivity(intent)
-//                        }
-//                        .show()
-//                }
-//            }
-//        }
-//    }
 
     /* ----------------------------------------------------------------------------------------- */
-    private fun showDialog(desc: String) {
-
-        val dialog = Dialog(this@CashManActivity)
-        dialog.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_success)
-        dialog.setCancelable(false)
-        dialog.show()
-        val txt_desc = dialog.findViewById<View>(R.id.txt_desc) as TextView
-        val txt_back = dialog.findViewById<View>(R.id.txt_back) as TextView
-        txt_desc.text = desc
-        txt_back.setOnClickListener {
-
-            dialog.dismiss()
-
-//            finish()
-        }
-
-
-    }
 
     fun get_balance() {
         Log.e("call api", "......getBalance...")
@@ -814,30 +739,15 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         }
 
     }
-
-    private fun get_update_users() {
-
-        val posUsersList = SupplierRepository().getPosuserListAPI()
-        binding.AppProgressBar.visibility = View.VISIBLE
-        posUsersList.observe(this@CashManActivity) { posusresList ->
-
-            lifecycleScope.launch {
-                Log.e("pos users", "size...." + posusresList.size)
-
-                for (i in 0 until posusresList.size) {
-
-                    if (posusresList[i].posuser_id.equals(loginPass)) {
-                        Log.e(
-                            "pos users......." + i,
-                            "${posusresList[i].posuser_firstname}size...." + posusresList[i].posuser_id
-                        )
-                    }
-                }
-
-//                    binding.AppProgressBar.visibility = View.INVISIBLE
-            }
+    override fun onDestroy() {
+        super.onDestroy()
+Log.e("ondestory","connected...........destroy")
+        if (mService != null) {
+            isBluetoothConnected = false
+            mService?.stop() // This should close the connection and stop threads
+            mService = null
+            Log.d("Bluetooth", "Bluetooth service stopped and cleaned up")
         }
     }
-
 
 }

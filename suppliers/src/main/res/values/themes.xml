@@ -30,7 +30,7 @@
         <item name="android:scaleY">1.5</item>
     </style>
     <style name="makePaymentButton" parent="Widget.AppCompat.Button">
-        <item name="android:backgroundTint">@color/tiu_red</item>
+        <item name="android:backgroundTint">@color/button_tint_states</item>
         <item name="android:textColor">@color/white</item>
         <item name="android:textSize">14sp</item>
         <item name="android:shadowColor">#420505</item>

@@ -88,12 +88,12 @@ object Retailer {
         var device :String = ""
         if(android.os.Build.MANUFACTURER == "CHUWI"){
 
-            if(android.os.Build.MODEL == "Hi10 XPro"){
-                device = "tab"
-
-            }else {
+//            if(android.os.Build.MODEL == "Hi10 XPro"){
+//                device = "tab"
+//
+//            }else {
                 device = "Mobile"
-            }
+//            }
         }else{
              device = "wpos"
         }

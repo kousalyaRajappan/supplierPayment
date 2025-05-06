@@ -45,12 +45,12 @@ import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.Hashtable;
 
-import za.co.topitup.suppliers.sdk.Command;
-import za.co.topitup.suppliers.sdk.PrintPicture;
-import za.co.topitup.suppliers.sdk.PrinterCommand;
 import za.co.topitup.suppliers.R;
 import zj.com.customize.sdk.Other;
 
+import  za.co.topitup.suppliers.command.sdk.Command;
+import  za.co.topitup.suppliers.command.sdk.PrintPicture;
+import  za.co.topitup.suppliers.command.sdk.PrinterCommand;
 public class Main_Activity extends AppCompatActivity implements OnClickListener{
 /******************************************************************************************************/
 	// Debugging
@@ -189,7 +189,7 @@ public class Main_Activity extends AppCompatActivity implements OnClickListener{
 		mTitle.setText(R.string.app_title);
 		mTitle = (TextView) findViewById(R.id.title_right_text);
 */
-		mTitle = findViewById( R.id.txt_title);
+		mTitle = findViewById(R.id.txt_title);
 		mTitle.setText(R.string.app_title);
 
 		// Get local Bluetooth adapter
@@ -1451,7 +1451,7 @@ public class Main_Activity extends AppCompatActivity implements OnClickListener{
 	                    Bitmap.Config.ARGB_8888);
 
 	            bitmap.setPixels(pixels, 0, QR_WIDTH, 0, 0, QR_WIDTH, QR_HEIGHT);
-
+	            
 	            byte[] data = PrintPicture.POS_PrintBMP(bitmap, 384, 0);
 	            SendDataByte(data);
 	            SendDataByte(PrinterCommand.POS_Set_PrtAndFeedPaper(30));

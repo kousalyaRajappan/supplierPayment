@@ -18,8 +18,8 @@ android {
         //applicationId "za.co.topitup.suppliers"
         minSdk 26
         targetSdk 33
-        versionCode 1
-        versionName "1.0"
+        versionCode 5
+        versionName "1.5"
         buildConfigField 'int', 'VERSION_CODE', "1"
         buildConfigField 'String', 'VERSION_NAME', "\"1.0\""
 

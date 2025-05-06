@@ -15,6 +15,8 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -32,7 +34,7 @@ public class BluetoothService {
     private static final String NAME = "ZJPrinter";
     //UUID must be this
     // Unique UUID for this application
-    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");		
+    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     // Member fields
     private final BluetoothAdapter mAdapter;
@@ -40,6 +42,8 @@ public class BluetoothService {
     private AcceptThread mAcceptThread;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
+    private final InputStream mmInStream= null;;
+    private final OutputStream mmOutStream= null;;
     private int mState;
 
     // Constants that indicate the current connection state
@@ -48,7 +52,10 @@ public class BluetoothService {
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
 
+    public static BluetoothSocket bluetoothSocket ;
     public static String ErrorMessage = "No_Error_Message";
+    public static int statusByteR;
+
     /**
      * Constructor. Prepares a new BTPrinter session.
      * @param context  The UI Activity Context
@@ -59,7 +66,7 @@ public class BluetoothService {
         mState = STATE_NONE;
         mHandler = handler;
     }
-    
+
 
     /**
      * Set the current state of the connection
@@ -125,32 +132,33 @@ public class BluetoothService {
      * @param socket  The BluetoothSocket on which the connection was made
      * @param device  The BluetoothDevice that has been connected
      */
+
+
+    @SuppressLint("MissingPermission")
     public synchronized void connected(BluetoothSocket socket, BluetoothDevice device) {
-        if (DEBUG) Log.d(TAG, "connected");
+        Log.d(TAG, "✔ CONNECTED: " + device.getName() + " - Initializing ConnectedThread...");
 
-        // Cancel the thread that completed the connection
-        if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread = null;}
+        if (socket == null) {
+            Log.e(TAG, "❌ ERROR: BluetoothSocket is NULL!");
+            return;
+        }
 
-        // Cancel any thread currently running a connection
-        if (mConnectedThread != null) {mConnectedThread.cancel(); mConnectedThread = null;}
+        // Cancel any running threads
+        if (mConnectThread != null) { mConnectThread.cancel(); mConnectThread = null; }
+        if (mConnectedThread != null) {
+            Log.w(TAG, "⚠ WARNING: Existing ConnectedThread found, canceling...");
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+        bluetoothSocket = socket;
 
-        // Cancel the accept thread because we only want to connect to one device
-        if (mAcceptThread != null) {mAcceptThread.cancel(); mAcceptThread = null;}
-
-        // Start the thread to manage the connection and perform transmissions
+        // Initialize and start new thread
         mConnectedThread = new ConnectedThread(socket);
         mConnectedThread.start();
 
-        // Send the name of the connected device back to the UI Activity
-        Message msg = mHandler.obtainMessage(Main_Activity.MESSAGE_DEVICE_NAME);
-        Bundle bundle = new Bundle();
-        bundle.putString(Main_Activity.DEVICE_NAME, device.getName());
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
-
+        Log.d(TAG, "✔ ConnectedThread started successfully.");
         setState(STATE_CONNECTED);
     }
-
     /**
      * Stop all threads
      */
@@ -178,58 +186,154 @@ public class BluetoothService {
         r.write(out);
     }
 
-    public boolean checkPrinterStatusBeforePrinting(Context con) {
-        if (mState != STATE_CONNECTED) {
-            Log.e(TAG, "Printer not connected");
+    public boolean checkPrinterStatusBeforePrinting() {
+        if (bluetoothSocket == null) {
+            Log.e(TAG, "❌ Printer is not connected.");
             return false;
         }
 
-        byte[] statusCommand = new byte[]{0x10, 0x04, 0x04}; // ESC/POS command to check paper status
         try {
-            // Send the status command
-            write(statusCommand);
+            OutputStream outputStream = bluetoothSocket.getOutputStream();
+            InputStream inputStream = bluetoothSocket.getInputStream();
 
-            // Read response
-            byte[] response = readInputStream(1); // Assuming the response is 1 byte
-            if (response != null) {
-                int statusByte = response[0] & 0xFF;
-                Log.d(TAG, "Printer status byte: " + statusByte);
+            // Send printer status command
+            byte[] statusCommand = new byte[]{0x10, 0x04, 0x04};
+            outputStream.write(statusCommand);
+            outputStream.flush();
+            Log.d(TAG, "✅ Status command sent");
 
-                // Check paper status
-                if ((statusByte & 0x04) == 0x04) {
-                    Log.e(TAG, "Printer is out of paper");
-                    return false;
-                } else {
-                    Log.d(TAG, "Printer has paper");
+            // Wait for response
+            long startTime = System.currentTimeMillis();
+            while (inputStream.available() == 0) {
+                if (System.currentTimeMillis() - startTime > 2000) {
+                    Log.e(TAG, "⚠ No response from printer (Timeout)");
+                    if(statusByteR == 18){
+                        return true;
+                    }else if (statusByteR == 114) {
+                        Log.w(TAG, "⚠ Printer out of paper (statusByteR == 114)");
+                        return false;
+                    }else {
+                        return false;
 
+                    }
+                }
+                Thread.sleep(50);
+            }
+
+            // Read printer status
+            byte[] buffer = new byte[4];
+            int bytesRead = inputStream.read(buffer);
+            if (bytesRead > 0) {
+                Log.d(TAG, "📄 Printer Status Bytes: " + Arrays.toString(buffer));
+
+                boolean hasPaper = interpretStatus(buffer);
+                if (hasPaper) {
                     return true;
                 }
-            }else{
-                return false;
-
             }
-        } catch (IOException e) {
-            Log.e(TAG, "Error checking printer status", e);
+        } catch (IOException | InterruptedException e) {
+            Log.e(TAG, "❌ Error communicating with printer", e);
         }
-        return false;
+
+        // 🔴 Printer might have closed the connection. Reconnect before printing.
+        return reconnectToPrinter();
     }
-    private byte[] readInputStream(int numBytes) throws IOException {
-        if (mConnectedThread != null) {
-            byte[] buffer = new byte[numBytes];
-            int bytesRead = mConnectedThread.mmInStream.read(buffer);
-            if (bytesRead > 0) {
-                return buffer;
+    public boolean reconnectToPrinter() {
+        if (bluetoothSocket != null) {
+            try {
+                Log.d(TAG, "🔄 Closing existing Bluetooth socket...");
+                bluetoothSocket.close();
+                bluetoothSocket = null;
+            } catch (IOException e) {
+                Log.e(TAG, "❌ Failed to close Bluetooth socket", e);
             }
         }
-        throw new IOException("No data available or not connected");
+
+        if (mAdapter == null || !mAdapter.isEnabled()) {
+            Log.e(TAG, "❌ Bluetooth is disabled.");
+            return false;
+        }
+
+        // Get the last connected device
+        BluetoothDevice lastDevice = null;
+        if (mConnectedThread != null && bluetoothSocket != null) {
+            lastDevice = bluetoothSocket.getRemoteDevice();
+        }
+
+        if (lastDevice == null) {
+            Log.e(TAG, "❌ No previously connected device found.");
+            return false;
+        }
+
+        Log.d(TAG, "🔄 Reconnecting to printer: " + lastDevice.getName());
+
+        // Attempt to reconnect
+        connect(lastDevice);
+
+        try {
+            Thread.sleep(2000); // Give some time for reconnection
+        } catch (InterruptedException e) {
+            Log.e(TAG, "⚠ Reconnection delay interrupted", e);
+        }
+
+        if (mState == STATE_CONNECTED) {
+            Log.d(TAG, "✅ Reconnection successful.");
+            return true;
+        } else {
+            Log.e(TAG, "❌ Reconnection failed.");
+            return false;
+        }
     }
 
-    /**
-     * Indicate that the connection attempt failed and notify the UI Activity.
-     */
+
+
+    private  boolean interpretStatus(byte[] status) {
+        if (status.length < 1) {
+            Log.e(TAG, "❌ Invalid printer status response");
+            return false;
+        }
+
+        int statusByte = status[0];
+
+        Log.d(TAG, "📝 Raw Printer Status Byte.........: " + statusByte);
+
+        // Check bit 5 (0x20) for "out of paper" status
+        if (statusByte == 18) {
+            Log.w(TAG, "⚠ Printer is ready!");
+            return true;
+        }
+        if ((statusByte & 0x20) != 0) {
+            Log.w(TAG, "⚠ Printer is out of paper!");
+            return false;
+        }
+
+        if (statusByte == 0x72) {  // 114 in decimal
+            Log.w(TAG, "⚠ Printer is out of paper!");
+            // Instead of closing, keep the connection alive and notify the UI
+            mHandler.postDelayed(() -> requestPrinterStatus(), 5000);
+            return false;
+        }
+        if (statusByte == 114) {  // Out of paper
+            Log.w(TAG, "⚠ Printer is out of paper!");
+            // DO NOT close the socket or reset Bluetooth service
+            return false;
+        }
+        // Some printers use bit 3 (0x08) to indicate paper issues
+        if ((statusByte & 0x08) != 0) {
+            Log.w(TAG, "⚠ Paper is low or missing!");
+            return false;
+        }
+
+        Log.d(TAG, "✅ Printer is ready with paper.");
+        return true;
+    }
+    private void requestPrinterStatus() {
+        Log.d(TAG, "🔄 Requesting printer status...");
+        write(new byte[]{0x10, 0x04, 0x04}); // Resend the status command
+    }
     private void connectionFailed() {
         setState(STATE_LISTEN);
-        
+
         // Send a failure message back to the Activity
         Message msg = mHandler.obtainMessage(Main_Activity.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
@@ -238,19 +342,7 @@ public class BluetoothService {
         mHandler.sendMessage(msg);
     }
 
-    /**
-     * Indicate that the connection was lost and notify the UI Activity.
-     */
-    private void connectionLost() {
-        //setState(STATE_LISTEN);
- 
-        // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(Main_Activity.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(Main_Activity.TOAST, "Device connection was lost");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
-    }
+
 
     /**
      * This thread runs while listening for incoming connections. It behaves
@@ -258,73 +350,76 @@ public class BluetoothService {
      * (or until cancelled).
      */
     private class AcceptThread extends Thread {
-        // The local server socket
-        private final BluetoothServerSocket mmServerSocket;
+        private BluetoothServerSocket mmServerSocket;
+        private boolean running = true;
 
-        @SuppressLint("MissingPermission")
         public AcceptThread() {
-            BluetoothServerSocket tmp = null;
-
-            // Create a new listening server socket
             try {
-                tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
+                mmServerSocket = mAdapter.listenUsingRfcommWithServiceRecord("MyBluetoothApp", MY_UUID);
+                Log.d(TAG, "Server socket created successfully");
             } catch (IOException e) {
-                Log.e(TAG, "listen() failed", e);
+                Log.e(TAG, "Server socket listen() failed", e);
+                mmServerSocket = null;
             }
-            mmServerSocket = tmp;
         }
 
         @Override
-		public void run() {
-            if (DEBUG) Log.d(TAG, "BEGIN mAcceptThread" + this);
-            setName("AcceptThread");
+        public void run() {
+            Log.d(TAG, "AcceptThread started... Waiting for connection");
+
+            if (mmServerSocket == null) {
+                Log.e(TAG, "Server socket is null, exiting AcceptThread.");
+                return;
+            }
+
             BluetoothSocket socket = null;
 
-            // Listen to the server socket if we're not connected
-            while (mState != STATE_CONNECTED) {
+            while (running && mState != STATE_CONNECTED) {
                 try {
-                    // This is a blocking call and will only return on a
-                    // successful connection or an exception
-                    socket = mmServerSocket.accept();
-                } catch (IOException e) {
-                    Log.e(TAG, "accept() failed", e);
-                    break;
-                }
+                    Log.d(TAG, "Listening for connections...");
 
-                // If a connection was accepted
-                if (socket != null) {
-                    synchronized (BluetoothService.this) {
-                        switch (mState) {
-                        case STATE_LISTEN:
-                        case STATE_CONNECTING:
-                            // Situation normal. Start the connected thread.
-                            connected(socket, socket.getRemoteDevice());
-                            break;
-                        case STATE_NONE:
-                        case STATE_CONNECTED:
-                            // Either not ready or already connected. Terminate new socket.
-                            try {
+                    // Use timeout to prevent indefinite blocking
+                    socket = mmServerSocket.accept();  // Blocking call
+
+                    if (socket != null) {
+                        synchronized (BluetoothService.this) {
+                            Log.d(TAG, "Connection accepted from " + socket.getRemoteDevice().getName());
+
+                            if (mState == STATE_LISTEN || mState == STATE_CONNECTING) {
+                                Log.d(TAG, "Starting ConnectedThread...");
+                                connected(socket, socket.getRemoteDevice());
+                            } else {
+                                Log.w(TAG, "Unwanted connection, closing socket.");
                                 socket.close();
-                            } catch (IOException e) {
-                                Log.e(TAG, "Could not close unwanted socket", e);
                             }
-                            break;
                         }
                     }
+                } catch (IOException e) {
+                    Log.e(TAG, "AcceptThread failed or timeout", e);
+                    if (running) {
+                        Log.d(TAG, "Restarting AcceptThread...");
+                        BluetoothService.this.start();
+                    }
+                    break;
                 }
             }
-            if (DEBUG) Log.i(TAG, "END mAcceptThread");
+
+            Log.d(TAG, "AcceptThread exiting...");
         }
 
         public void cancel() {
-            if (DEBUG) Log.d(TAG, "cancel " + this);
+            running = false;
+            Log.d(TAG, "Canceling AcceptThread...");
             try {
-                mmServerSocket.close();
+                if (mmServerSocket != null) {
+                    mmServerSocket.close();
+                }
             } catch (IOException e) {
-                Log.e(TAG, "close() of server failed", e);
+                Log.e(TAG, "close() of server socket failed", e);
             }
         }
     }
+
 
 
     /**
@@ -336,7 +431,6 @@ public class BluetoothService {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
 
-        @SuppressLint("MissingPermission")
         public ConnectThread(BluetoothDevice device) {
             mmDevice = device;
             BluetoothSocket tmp = null;
@@ -344,16 +438,15 @@ public class BluetoothService {
             // Get a BluetoothSocket for a connection with the
             // given BluetoothDevice
             try {
-                tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
+                tmp = device.createInsecureRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
                 Log.e(TAG, "create() failed", e);
             }
             mmSocket = tmp;
         }
 
-        @SuppressLint("MissingPermission")
         @Override
-		public void run() {
+        public void run() {
             Log.i(TAG, "BEGIN mConnectThread");
             setName("ConnectThread");
 
@@ -404,19 +497,19 @@ public class BluetoothService {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
+        private volatile boolean running = true; // Flag to control thread
 
         public ConnectedThread(BluetoothSocket socket) {
-            Log.d(TAG, "create ConnectedThread");
+            Log.d(TAG, "Creating ConnectedThread");
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
 
-            // Get the BluetoothSocket input and output streams
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
-                Log.e(TAG, "temp sockets not created", e);
+                Log.e(TAG, "Error getting streams", e);
             }
 
             mmInStream = tmpIn;
@@ -424,118 +517,102 @@ public class BluetoothService {
         }
 
         @Override
-		public void run() {
-            Log.i(TAG, "BEGIN mConnectedThread");
+        public void run() {
+            Log.i(TAG, "ConnectedThread started");
+            byte[] buffer = new byte[256];
             int bytes;
 
-            // Keep listening to the InputStream while connected
-            while (true) {
+            while (running) {
                 try {
-                	byte[] buffer = new byte[256];
-                    // Read from the InputStream
-                    bytes = mmInStream.read(buffer);
-                    if(bytes>0)
-                    {
-	                    // Send the obtained bytes to the UI Activity
-	                    mHandler.obtainMessage(Main_Activity.MESSAGE_READ, bytes, -1, buffer)
-	                            .sendToTarget();
-                    }
-                    else
-                    {
-                        Log.e(TAG, "disconnected");
-                        connectionLost();
-                        
-                        //add by chongqing jinou
-                        if(mState != STATE_NONE)
-                        {
-                            Log.e(TAG, "disconnected");
-                       	// Start the service over to restart listening mode
-                        	BluetoothService.this.start();
-                        }
+                    if (mmSocket == null || !mmSocket.isConnected()) {
+                        Log.w(TAG, "⚠ Bluetooth socket is not connected. Exiting thread...");
                         break;
                     }
-                } catch (IOException e) {
-                    Log.e(TAG, "disconnected", e);
-                    connectionLost();
-                    
-                    //add by chongqing jinou
-                    if(mState != STATE_NONE)
-                    {
-                    	// Start the service over to restart listening mode
-                    	BluetoothService.this.start();
+
+                    int availableBytes = 0;
+                    try {
+                        availableBytes = mmInStream.available();
+                    } catch (IOException e) {
+                        Log.e(TAG, "❌ InputStream is closed or not available", e);
+                        connectionLost();
+                        restartServiceIfNeeded();
+                        break;
                     }
+
+                    if (availableBytes  > 0) {
+                        bytes = mmInStream.read(buffer);
+                        if (bytes > 0) {
+                            byte[] readData = Arrays.copyOf(buffer, bytes);
+                            statusByteR = readData[0] & 0xFF;
+
+                            Log.d(TAG, "📝 Raw Printer Status Byte.......22222222....: " + statusByteR);
+
+                            if (statusByteR == 114) {  // 114 means out of paper
+                                Log.w(TAG, "⚠ Printer is out of paper!");
+                                continue;  // DO NOT close the socket
+                            }
+                            if (statusByteR == 18) {  // 114 means out of paper
+                                Log.w(TAG, "⚠ Printer have paper!");
+                                continue;  // DO NOT close the socket
+                            }
+                            Log.d(TAG, "Received: " + new String(readData, StandardCharsets.UTF_8));
+                            mHandler.obtainMessage(Main_Activity.MESSAGE_READ, bytes, -1, readData).sendToTarget();
+                        }
+                    } else {
+                        Thread.sleep(10); // Reduce CPU usage while waiting
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "InputStream disconnected", e);
+                    connectionLost();
+                    restartServiceIfNeeded();
+                    break;
+                } catch (InterruptedException e) {
+                    Log.e(TAG, "Thread interrupted", e);
                     break;
                 }
             }
         }
 
-        /**
-         * Write to the connected OutStream.
-         * @param buffer  The bytes to write
-         */
         public void write(byte[] buffer) {
             try {
+                Log.d(TAG, "Printer Response: " );
+
                 mmOutStream.write(buffer);
-                mmOutStream.flush();//清空缓存
-               /* if (buffer.length > 3000) //
-                {
-                  byte[] readata = new byte[1];
-                  SPPReadTimeout(readata, 1, 5000);
-                }*/
-                Log.i("BTPWRITE", new String(buffer,"GBK"));
-                // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(Main_Activity.MESSAGE_WRITE, -1, -1, buffer)
-                        .sendToTarget();
-            } catch (IOException e) {
-                Log.e(TAG, "Exception during write", e);
+                mmOutStream.flush();
+
+                // Wait for printer response (if needed)
+//                Thread.sleep(30);
+                if (mmInStream.available() > 0) {
+                    byte[] response = new byte[256];
+                    int responseBytes = mmInStream.read(response);
+                    Log.d(TAG, "Printer Response: " + new String(response, 0, responseBytes, StandardCharsets.UTF_8));
+                }
+
+                mHandler.obtainMessage(Main_Activity.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
+            } catch ( Exception e) {
+                Log.e(TAG, "Error during write", e);
             }
         }
 
-        /*
-        //
-        private boolean SPPReadTimeout(byte[] Data, int DataLen, int Timeout){
-          for (int i = 0; i < Timeout / 5; i++)
-          {
-            try
-            {
-              if (mmInStream.available() >= DataLen)
-              {
-                try
-                {
-                	mmInStream.read(Data, 0, DataLen);
-                  return true;
-                }
-                catch (IOException e)
-                {
-                  ErrorMessage = "读取蓝牙数据失败";
-                  return false;
-                }
-              }
-            }
-            catch (IOException e)
-            {
-              ErrorMessage = "读取蓝牙数据失败";
-              return false;
-            }
-            try
-            {
-              Thread.sleep(5L);
-            }
-            catch (InterruptedException e)
-            {
-              ErrorMessage = "读取蓝牙数据失败";
-              return false;
-            }
-          }
-          ErrorMessage = "蓝牙读数据超时";
-          return false;
-        }
-        */
         public void cancel() {
+            running = false; // Stop the loop
             try {
                 mmSocket.close();
+                Log.d(TAG, "Socket closed");
             } catch (IOException e) {
-                Log.e(TAG, "close() of connect socket failed", e);
+                Log.e(TAG, "Error closing socket", e);
+            }
+        }
+
+        private void connectionLost() {
+            Log.e(TAG, "Connection lost");
+            mHandler.obtainMessage(Main_Activity.MESSAGE_TOAST, -1, -1, "Device disconnected").sendToTarget();
+        }
+
+        private void restartServiceIfNeeded() {
+            if (mState != STATE_NONE) {
+                Log.i(TAG, "Restarting Bluetooth service");
+                BluetoothService.this.start();
             }
         }
     }

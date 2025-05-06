@@ -49,7 +49,6 @@ public class DeviceListActivity extends Activity {
     private ArrayAdapter<String> mPairedDevicesArrayAdapter;
     private ArrayAdapter<String> mNewDevicesArrayAdapter;
 
-    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -113,7 +112,6 @@ public class DeviceListActivity extends Activity {
         }
     }
 
-    @SuppressLint("MissingPermission")
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -123,7 +121,6 @@ public class DeviceListActivity extends Activity {
         this.unregisterReceiver(mReceiver);
     }
 
-    @SuppressLint("MissingPermission")
     private void doDiscovery() {
         if (mBtAdapter == null) return;
 
@@ -194,7 +191,6 @@ public class DeviceListActivity extends Activity {
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @SuppressLint("MissingPermission")
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
