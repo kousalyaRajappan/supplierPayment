@@ -51,9 +51,7 @@ class Print(appContext: Context){
             try {
                 printer?.printInit()
                 printer?.clearPrintDataCache()
-                //printer.setPrintType(0);
-                //printer.setPrintPaperType(0);
-                //printer.printPaper(1)
+
             }  catch (e: RemoteException) {
                 e.printStackTrace()
                 printerExists = false
@@ -82,65 +80,143 @@ class Print(appContext: Context){
         val reference = payment.paymentReference
         //TODO extension to proper format
         val amount = toCurrency(payment.amount)
+        logger(TAG, "Printing printDefaultReceipt")
 
         try {
-            logger(TAG, "Printing printDefaultReceipt")
-            printer?.printInit()
-            printer?.let { thisPrinter ->
-                thisPrinter.clearPrintDataCache()
-                thisPrinter.printString(supplierName, 30, center, true, false)
+            if(Retailer.connected.equals("usb")){
+                Command.ESC_Align[2] = 0x01.toByte()
+                usbCtrl.sendByte(Command.ESC_Align, dev)
+                usbCtrl.sendMsg(supplierName, "GBK", dev)
+
+// Reprint flag
                 if (isReprint) {
-                    thisPrinter.printPaper(5)
-                    thisPrinter.printString(reprint, 28, center, false, true)
+                    usbCtrl.sendMsg("\n\n\n\n", "GBK", dev)
+
+                    usbCtrl.sendMsg(reprint, "GBK", dev)
                 }
-                thisPrinter.printPaper(10)
-                thisPrinter.printString(
-                    receiptNumber, boldFont, 28, center,
-                    false, false, false
-                )
-                thisPrinter.printPaper(15)
-                thisPrinter.print2StringInLine(
-                    "Date", "Time", 1.0f, defaultFont, defaultFontSize,
-                    left, false, true, false
-                )
-                thisPrinter.print2StringInLine(
-                    date, time, 1.0f, boldFont, defaultFontSize,
-                    left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Cashier", cashier, 1.0f, defaultFont,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.printPaper(10)
 
-                thisPrinter.print2StringInLine(
-                    "Account #:", accountNumber, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Customer #:", customerNumber, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Reference:", reference, 1.0f, Printer.Font.SANS_SERIF,
-                    defaultFontSize, left, false, false, false
-                )
-                thisPrinter.print2StringInLine(
-                    "Amount:", amount, 1.0f, boldFont,
-                    defaultFontSize, left, true, false, true
-                )
+                usbCtrl.sendMsg("\n\n\n\n", "GBK", dev)
 
-                //Footer
-                thisPrinter.printPaper(20)
-                thisPrinter.printString(companyName, 25, center, false, false)
-                thisPrinter.printString(phoneNumber, 28, center, false, false)
-                thisPrinter.printString(website, 25, center, false, false)
+// Receipt Number - center aligned and bold
+                Command.ESC_Align[2] = 0x01.toByte()
+                usbCtrl.sendByte(Command.ESC_Align, dev)
+                usbCtrl.sendMsg(receiptNumber, "GBK", dev)
 
-                //TODO Update SDK to use this function
-                //printer.printMultiseriateString()
+                usbCtrl.sendMsg("\n\n\n\n", "GBK", dev)
 
-                thisPrinter.printPaper(80)
+// Left align for details
+                Command.ESC_Align[2] = 0x00.toByte()
+                usbCtrl.sendByte(Command.ESC_Align, dev)
+                usbCtrl.sendMsg("Date" + getWhiteSpace(32 - 4 - 4) + "Time", "GBK", dev)
+                usbCtrl.sendMsg(date + getWhiteSpace(32 - date!!.length - time!!.length) + time, "GBK", dev)
+                usbCtrl.sendMsg("Cashier" + getWhiteSpace(32 - 7 - cashier!!.length) + cashier, "GBK", dev)
+
+                usbCtrl.sendMsg("\n\n\n\n", "GBK", dev)
+
+// Account, Customer, Reference, Amount
+                usbCtrl.sendMsg("Account #:" + getWhiteSpace(32 - 10 - accountNumber!!.length) + accountNumber, "GBK", dev)
+                usbCtrl.sendMsg("Customer #:" + getWhiteSpace(32 - 11 - customerNumber!!.length) + customerNumber, "GBK", dev)
+                usbCtrl.sendMsg("Reference:" + getWhiteSpace(32 - 10 - reference!!.length) + reference, "GBK", dev)
+                usbCtrl.sendMsg("Amount:" + getWhiteSpace(32 - 7 - amount.length) + amount, "GBK", dev)
+
+                usbCtrl.sendMsg("\n\n\n\n", "GBK", dev)
+
+// Footer - center align
+                Command.ESC_Align[2] = 0x01.toByte()
+                usbCtrl.sendByte(Command.ESC_Align, dev)
+                usbCtrl.sendMsg(companyName, "GBK", dev)
+                usbCtrl.sendMsg(phoneNumber, "GBK", dev)
+            }else if(Retailer.connected.equals("bluetooth")){
+                val alignCenter = byteArrayOf(0x1B, 0x61, 0x01)
+                val alignLeft = byteArrayOf(0x1B, 0x61, 0x00)
+
+                SendBytes(alignCenter)
+                SendText("$supplierName\n")
+                if (isReprint) {
+                    SendText("$reprint\n\n")
+                }
+
+                SendBytes(alignLeft)
+                SendText("Date${getWhiteSpace(32 - 8)}Time\n")
+                SendText("$date${getWhiteSpace(32 - date!!.length - time!!.length)}$time\n")
+
+                SendText("Cashier" + getWhiteSpace(32 - 7 - cashier!!.length) + cashier + "\n")
+
+
+                SendText("\n\n\n\n")
+
+// Account, Customer, Reference, Amount
+                SendText("Account #:" + getWhiteSpace(32 - 10 - accountNumber!!.length) + accountNumber + "\n")
+                SendText("Customer #:" + getWhiteSpace(32 - 11 - customerNumber!!.length) + customerNumber + "\n")
+                SendText("Reference:" + getWhiteSpace(32 - 10 - reference!!.length) + reference + "\n")
+                SendText("Amount:" + getWhiteSpace(32 - 7 - amount.length) + amount + "\n")
+                SendBytes(alignCenter)
+                SendText("$companyName\n")
+                SendText("$phoneNumber\n")
+                SendText("$website\n")
+                SendText("\n\n\n\n\n\n") // Simulate `printPaper(80)`
+
+                SendBytes(alignLeft)
+            }else{
+                printer?.printInit()
+                printer?.let { thisPrinter ->
+                    thisPrinter.clearPrintDataCache()
+                    thisPrinter.printString(supplierName, 30, center, true, false)
+                    if (isReprint) {
+                        thisPrinter.printPaper(5)
+                        thisPrinter.printString(reprint, 28, center, false, true)
+                    }
+                    thisPrinter.printPaper(10)
+                    thisPrinter.printString(
+                        receiptNumber, boldFont, 28, center,
+                        false, false, false
+                    )
+                    thisPrinter.printPaper(15)
+                    thisPrinter.print2StringInLine(
+                        "Date", "Time", 1.0f, defaultFont, defaultFontSize,
+                        left, false, true, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        date, time, 1.0f, boldFont, defaultFontSize,
+                        left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Cashier", cashier, 1.0f, defaultFont,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.printPaper(10)
+
+                    thisPrinter.print2StringInLine(
+                        "Account #:", accountNumber, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Customer #:", customerNumber, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Reference:", reference, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Amount:", amount, 1.0f, boldFont,
+                        defaultFontSize, left, true, false, true
+                    )
+
+                    //Footer
+                    thisPrinter.printPaper(20)
+                    thisPrinter.printString(companyName, 25, center, false, false)
+                    thisPrinter.printString(phoneNumber, 28, center, false, false)
+                    thisPrinter.printString(website, 25, center, false, false)
+
+                    //TODO Update SDK to use this function
+                    //printer.printMultiseriateString()
+
+                    thisPrinter.printPaper(80)
+                }
             }
+
+
         } catch (e: RemoteException) {
             e.printStackTrace()
         }
@@ -406,31 +482,31 @@ class Print(appContext: Context){
 
 
 //                    (context as? CashManActivity)?.SendDataString(companyName, context)
-                } else {
+                } else{
 
-                    printer?.printInit()
-                    printer?.let { thisPrinter ->
-                        thisPrinter.clearPrintDataCache()
-                        thisPrinter.printString(supplierName, 30, center, true, false)
-                        if (isReprint) {
-                            thisPrinter.printPaper(5)
-                            thisPrinter.printString(reprint, 28, center, false, true)
-                        }
-                        thisPrinter.printPaper(10)
-                        /* thisPrinter.printString(
+                printer?.printInit()
+                printer?.let { thisPrinter ->
+                    thisPrinter.clearPrintDataCache()
+                    thisPrinter.printString(supplierName, 30, center, true, false)
+                    if (isReprint) {
+                        thisPrinter.printPaper(5)
+                        thisPrinter.printString(reprint, 28, center, false, true)
+                    }
+                    thisPrinter.printPaper(10)
+                    /* thisPrinter.printString(
                          receiptNumber, boldFont, 28, center,
                          false, false, false
                      )*/
-                        thisPrinter.printPaper(15)
-                        thisPrinter.print2StringInLine(
-                            "Date", "Time", 1.0f, defaultFont, defaultFontSize,
-                            left, false, true, false
-                        )
-                        thisPrinter.print2StringInLine(
-                            date, time, 1.0f, boldFont, defaultFontSize,
-                            left, false, false, false
-                        )
-                        /*  thisPrinter.print2StringInLine(
+                    thisPrinter.printPaper(15)
+                    thisPrinter.print2StringInLine(
+                        "Date", "Time", 1.0f, defaultFont, defaultFontSize,
+                        left, false, true, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        date, time, 1.0f, boldFont, defaultFontSize,
+                        left, false, false, false
+                    )
+                    /*  thisPrinter.print2StringInLine(
                           "Cashier", cashier, 1.0f, defaultFont,
                           defaultFontSize, left, false, false, false
                       )
@@ -440,43 +516,42 @@ class Print(appContext: Context){
                           "Account #:", accountNumber, 1.0f, Printer.Font.SANS_SERIF,
                           defaultFontSize, left, false, false, false
                       )*/
-                        thisPrinter.print2StringInLine(
-                            "Reference:", reference, 1.0f, Printer.Font.SANS_SERIF,
-                            defaultFontSize, left, false, false, false
-                        )
-                        thisPrinter.print2StringInLine(
-                            "Customer #:", customerNumber, 1.0f, Printer.Font.SANS_SERIF,
-                            defaultFontSize, left, false, false, false
-                        )
-                        thisPrinter.print2StringInLine(
-                            "Shipment #:", shipment, 1.0f, Printer.Font.SANS_SERIF,
-                            defaultFontSize, left, false, false, false
-                        )
-                        thisPrinter.print2StringInLine(
-                            "Driver #:", driver, 1.0f, Printer.Font.SANS_SERIF,
-                            defaultFontSize, left, false, false, false
-                        )
-                        thisPrinter.print2StringInLine(
-                            "Driver Cell #:", drivercell, 1.0f, Printer.Font.SANS_SERIF,
-                            defaultFontSize, left, false, false, false
-                        )
-                        thisPrinter.print2StringInLine(
-                            "Amount:", amount, 1.0f, boldFont,
-                            defaultFontSize, left, true, false, true
-                        )
+                    thisPrinter.print2StringInLine(
+                        "Reference:", reference, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Customer #:", customerNumber, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Shipment #:", shipment, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Driver #:", driver, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Driver Cell #:", drivercell, 1.0f, Printer.Font.SANS_SERIF,
+                        defaultFontSize, left, false, false, false
+                    )
+                    thisPrinter.print2StringInLine(
+                        "Amount:", amount, 1.0f, boldFont,
+                        defaultFontSize, left, true, false, true
+                    )
 
-                        //Footer
-                        thisPrinter.printPaper(20)
-                        thisPrinter.printString(companyName, 25, center, false, false)
-                        thisPrinter.printString(phoneNumber, 28, center, false, false)
-                        thisPrinter.printString(website, 25, center, false, false)
+                    //Footer
+                    thisPrinter.printPaper(20)
+                    thisPrinter.printString(companyName, 25, center, false, false)
+                    thisPrinter.printString(phoneNumber, 28, center, false, false)
+                    thisPrinter.printString(website, 25, center, false, false)
 
-                        //TODO Update SDK to use this function
-                        //printer.printMultiseriateString()
+                    //TODO Update SDK to use this function
+                    //printer.printMultiseriateString()
 
-                        thisPrinter.printPaper(80)
-                    }
-                }
+                    thisPrinter.printPaper(80)
+            } }
 
             }
         } catch (e: RemoteException) {
@@ -505,34 +580,106 @@ class Print(appContext: Context){
         val phoneNumber = context.getString(R.string.company_phone)
         val reprint = context.getString(R.string.reprintLabel)
         val website = context.getString(R.string.company_website)
+        if(Retailer.connected.equals("usb")){
+            Command.ESC_Align[2] = 0x01.toByte()
+            usbCtrl.sendByte(Command.ESC_Align, dev)
+
+// Bold ON
+            val boldOn = byteArrayOf(0x1B, 0x45, 0x01)
+            usbCtrl.sendByte(boldOn, dev)
+
+// Print payment text
+            usbCtrl.sendMsg("$payment\n", "GBK", dev)
+
+// Bold OFF
+            val boldOff = byteArrayOf(0x1B, 0x45, 0x00)
+            usbCtrl.sendByte(boldOff, dev)
+
+            if (isReprint) {
+                // Small paper feed (5 units)
+                usbCtrl.sendMsg("\n", "GBK", dev)
+
+                // Underline ON
+                val underlineOn = byteArrayOf(0x1B, 0x2D, 0x01)
+                usbCtrl.sendByte(underlineOn, dev)
+
+                usbCtrl.sendMsg("$reprint\n", "GBK", dev)
+
+                // Underline OFF
+                val underlineOff = byteArrayOf(0x1B, 0x2D, 0x00)
+                usbCtrl.sendByte(underlineOff, dev)
+            }
+
+// Additional line spacing
+            usbCtrl.sendMsg("\n\n", "GBK", dev)       // ~10 spacing
+            usbCtrl.sendMsg("\n\n\n\n", "GBK", dev)   // ~20 spacing
+
+// Final feed to clear printer buffer or move paper forward (~80 spacing)
+            usbCtrl.sendMsg("\n\n\n\n\n\n\n\n", "GBK", dev)
+        }else if(Retailer.connected.equals("bluetooth")){
+            val alignCenter = byteArrayOf(0x1B, 0x61, 0x01)
+            SendBytes(alignCenter)
+
+// Bold ON
+            val boldOn = byteArrayOf(0x1B, 0x45, 0x01)
+            SendBytes(boldOn)
+
+// Print main payment text
+            SendText("$payment\n")
+
+// Bold OFF
+            val boldOff = byteArrayOf(0x1B, 0x45, 0x00)
+            SendBytes(boldOff)
+
+            if (isReprint) {
+                // Add 5 dot lines spacing (approx ~5mm if needed)
+                SendText("\n")
+
+                // Underline ON
+                val underlineOn = byteArrayOf(0x1B, 0x2D, 0x01)
+                SendBytes(underlineOn)
+
+                SendText("$reprint\n")
+
+                // Underline OFF
+                val underlineOff = byteArrayOf(0x1B, 0x2D, 0x00)
+                SendBytes(underlineOff)
+            }
+
+// Add spacing (10 and 20 units as line feeds)
+            SendText("\n\n")       // ~10 spacing
+            SendText("\n\n\n\n")   // ~20 spacing
+
+// Final feed to cut area or separate
+            SendText("\n\n\n\n\n\n\n\n")
+        }else{
+            try {
+                logger(TAG, "Printing printDefaultReceipt")
+                printer?.printInit()
+                printer?.let { thisPrinter ->
+                    thisPrinter.clearPrintDataCache()
+                    thisPrinter.printString(payment, 30, center, true, false)
+                    if (isReprint) {
+                        thisPrinter.printPaper(5)
+                        thisPrinter.printString(reprint, 28, center, false, true)
+                    }
+                    thisPrinter.printPaper(10)
 
 
-        try {
-            logger(TAG, "Printing printDefaultReceipt")
-            printer?.printInit()
-            printer?.let { thisPrinter ->
-                thisPrinter.clearPrintDataCache()
-                thisPrinter.printString(payment, 30, center, true, false)
-                if (isReprint) {
-                    thisPrinter.printPaper(5)
-                    thisPrinter.printString(reprint, 28, center, false, true)
-                }
-                thisPrinter.printPaper(10)
-
-
-                //Footer
-                thisPrinter.printPaper(20)
+                    //Footer
+                    thisPrinter.printPaper(20)
 //                thisPrinter.printString(companyName, 25, center, false, false)
 //                thisPrinter.printString(phoneNumber, 28, center, false, false)
 //                thisPrinter.printString(website, 25, center, false, false)
 
-                //TODO Update SDK to use this function
-                //printer.printMultiseriateString()
+                    //TODO Update SDK to use this function
+                    //printer.printMultiseriateString()
 
-                thisPrinter.printPaper(80)
+                    thisPrinter.printPaper(80)
+                }
+            } catch (e: RemoteException) {
+                e.printStackTrace()
             }
-        } catch (e: RemoteException) {
-            e.printStackTrace()
         }
     }
 
@@ -551,53 +698,65 @@ class Print(appContext: Context){
     private fun printReceipt(payment: Payment, bitmap: Bitmap? = null, isReprint: Boolean = false): Int {
         var result = -1
         loop = true
+        logger(TAG, "Printing printReceipt 11111111")
 
-        logger(TAG, "Printing printReceipt")
 
-        val statusArray = IntArray(1)
-        var status: Int = -1
+        if(Retailer.connected.equals("usb")) {
+            printDefaultReceipt(payment, isReprint)
 
-        try {
-            status = printer?.getPrinterStatus(statusArray) ?: -1
-            logger(TAG, "Print Receipt Status: $status")
-            logger(TAG, "Print Receipt StatusArray: ${statusArray[0]}")
-        } catch (e: RemoteException) {
-            e.printStackTrace()
-        }
+        }else if(Retailer.connected.equals("bluetooth")){
+            printDefaultReceipt(payment, isReprint)
 
-        if (status == 0){
-            if (statusArray[0] == 138) {
-                result = statusArray[0]
-                return result
+        }else{
+
+
+            val statusArray = IntArray(1)
+            var status: Int = -1
+
+            try {
+                status = printer?.getPrinterStatus(statusArray) ?: -1
+                logger(TAG, "Print Receipt Status: $status")
+                logger(TAG, "Print Receipt StatusArray: ${statusArray[0]}")
+            } catch (e: RemoteException) {
+                e.printStackTrace()
             }
-        } else {
-            logger(TAG, "Print Receipt: Failed to communicate with the printer.")
-            return status
-        }
 
-        //todo Print two copies if not reprint
-        val count  = if (isReprint) 1 else 2
-        for (i in 1..count) {
-            if (printerExists) {
-                if (bitmap == null) {
-                    printDefaultReceipt(payment, isReprint)
-                } else {
-                    printBitmapReceipt(bitmap)
+            if (status == 0){
+                if (statusArray[0] == 138) {
+                    result = statusArray[0]
+                    return result
                 }
-                result = printer?.printFinish() ?: -1
+            } else {
+                logger(TAG, "Print Receipt: Failed to communicate with the printer.")
+                return status
+            }
+
+            //todo Print two copies if not reprint
+            val count  = if (isReprint) 1 else 2
+            for (i in 1..count) {
+                if (printerExists) {
+                    if (bitmap == null) {
+                        printDefaultReceipt(payment, isReprint)
+                    } else {
+                        printBitmapReceipt(bitmap)
+                    }
+                    result = printer?.printFinish() ?: -1
+                }
+            }
+
+            if (result == 0) {
+                loop = false
             }
         }
 
-        if (result == 0) {
-            loop = false
-        }
+
         return result
     }
     private fun printSupplierReceipt(payment: MyItem, bitmap: Bitmap? = null, isReprint: Boolean = false): Int {
         var result = -1
         loop = true
 
-        logger(TAG, "Printing printReceipt")
+        logger(TAG, "Printing printReceipt 222222222")
 
         if(Retailer.deviceTypeTo.equals("Mobile")){
             val count = if (isReprint) 1 else 2
@@ -657,45 +816,60 @@ class Print(appContext: Context){
         var result = -1
         loop = true
 
-        logger(TAG, "Printing printReceipt")
+        logger(TAG, "Printing printReceipt 3333333333")
 
-        val statusArray = IntArray(1)
-        var status: Int = -1
+        if(Retailer.connected.equals("usb")) {
+            logger(TAG, "Printing usb 3333333333")
 
-        try {
-            status = printer?.getPrinterStatus(statusArray) ?: -1
-            logger(TAG, "Print Receipt Status: $status")
-            logger(TAG, "Print Receipt StatusArray: ${statusArray[0]}")
-        } catch (e: RemoteException) {
-            e.printStackTrace()
-        }
+            printDefaultReceiptNew(payment, isReprint)
 
-        if (status == 0){
-            if (statusArray[0] == 138) {
-                result = statusArray[0]
-                return result
+        }else if(Retailer.connected.equals("bluetooth")){
+            logger(TAG, "Printing bluetooth 3333333333")
+
+            printDefaultReceiptNew(payment, isReprint)
+                loop = false
+
+        }else {
+
+            val statusArray = IntArray(1)
+            var status: Int = -1
+
+            try {
+                status = printer?.getPrinterStatus(statusArray) ?: -1
+                logger(TAG, "Print Receipt Status: $status")
+                logger(TAG, "Print Receipt StatusArray: ${statusArray[0]}")
+            } catch (e: RemoteException) {
+                e.printStackTrace()
             }
-        } else {
-            logger(TAG, "Print Receipt: Failed to communicate with the printer.")
-            return status
-        }
 
-        //todo Print two copies if not reprint
-        val count  = if (isReprint) 1 else 2
-        for (i in 1..count) {
-            if (printerExists) {
-                if (bitmap == null) {
-                    printDefaultReceiptNew(payment, isReprint)
-                } else {
-                    printBitmapReceipt(bitmap)
+            if (status == 0) {
+                if (statusArray[0] == 138) {
+                    result = statusArray[0]
+                    return result
                 }
-                result = printer?.printFinish() ?: -1
+            } else {
+                logger(TAG, "Print Receipt: Failed to communicate with the printer.")
+                return status
+            }
+
+            //todo Print two copies if not reprint
+            val count = if (isReprint) 1 else 2
+            for (i in 1..count) {
+                if (printerExists) {
+                    if (bitmap == null) {
+                        printDefaultReceiptNew(payment, isReprint)
+                    } else {
+                        printBitmapReceipt(bitmap)
+                    }
+                    result = printer?.printFinish() ?: -1
+                }
+            }
+
+            if (result == 0) {
+                loop = false
             }
         }
 
-        if (result == 0) {
-            loop = false
-        }
         return result
     }
 

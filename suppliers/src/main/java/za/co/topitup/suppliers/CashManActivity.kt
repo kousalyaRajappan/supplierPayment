@@ -146,7 +146,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
                             prefs.edit().putBoolean("isBluetoothConnected", true).apply()
                                 sendDataByte(
                                     PrinterCommand.POS_Print_Text(
-                                        "hi this is gowthami",
+                                        "\n",
                                         CHINESE,
                                         0,
                                         0,
@@ -321,12 +321,13 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         val tiu_user_name = findViewById(R.id.tiu_user_name) as TextView
 
 
+
         try {
             val packageInfo = packageManager.getPackageInfo(packageName, 0)
             val versionCode = packageInfo.versionCode
             val versionName = packageInfo.versionName
-
             txt_version.setText(versionName.toString())
+            updateVersion();
             // Now, you can use versionCode and versionName as needed.
             // For example, you can display them in a TextView or log them.
         } catch (e: PackageManager.NameNotFoundException) {
@@ -354,8 +355,6 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         }, 60000)
 
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-
-
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 if (tab != null) {
                     addSupplierButton.isVisible = false
@@ -433,6 +432,10 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
             }
         }
         printer = Print(this)
+    }
+
+    private fun updateVersion() {
+
     }
 
     private fun connectBluetooth() {
