@@ -286,6 +286,20 @@ class SupplierRepository {
         }
     }
 
+    suspend fun getUpdateInfo(version: String, licence: String): ApiResponse {
+        return try {
+
+            val response = supplierEndpointAPI.upsertSupplierApp(headerMap,licence,version)
+
+            checkApiResponse(response)
+
+        } catch (error: IOException) {
+            ApiResponse.NetworkException(error.message)
+        } catch (error: IllegalStateException) {
+            ApiResponse.NetworkException(error.message)
+        }
+    }
+
 
 
     fun getPosuserListAPI(): MutableLiveData<List<pos_users>> {

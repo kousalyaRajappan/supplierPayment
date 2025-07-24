@@ -237,8 +237,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         } else if (connected.equals("bluetooth")) {
             Log.e("live env", "live......connected..111111111111...." + connected)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val hasPermission = ContextCompat.checkSelfPermission(
-                    this,
+                val hasPermission = ContextCompat.checkSelfPermission(this,
                     Manifest.permission.BLUETOOTH_CONNECT
                 ) == PackageManager.PERMISSION_GRANTED
 
@@ -327,7 +326,7 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
             val versionCode = packageInfo.versionCode
             val versionName = packageInfo.versionName
             txt_version.setText(versionName.toString())
-            updateVersion();
+            updateVersion(versionName.toString(),licence);
             // Now, you can use versionCode and versionName as needed.
             // For example, you can display them in a TextView or log them.
         } catch (e: PackageManager.NameNotFoundException) {
@@ -434,7 +433,26 @@ class CashManActivity : FragmentActivity(), NavigationHost, //LifecycleOwner,
         printer = Print(this)
     }
 
-    private fun updateVersion() {
+    private fun updateVersion(version: String,licence:String) {
+        val sharedPref = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val alreadyUpdated = sharedPref.getBoolean("isVersionUpdated", false)
+
+        if (alreadyUpdated) {
+            Log.d("updateVersion", "Already updated, skipping call.")
+            return
+        }
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            supplierViewModel.updateVer(version, licence).collect { result ->
+                if (result.status == ApiStatus.SUCCESS) {
+                    sharedPref.edit().putBoolean("isVersionUpdated", true).apply()
+
+                    Log.e("response", "res" + result.data)
+                }
+            }
+
+
+        }
 
     }
 

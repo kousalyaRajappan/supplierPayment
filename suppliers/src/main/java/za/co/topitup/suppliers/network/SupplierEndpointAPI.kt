@@ -92,6 +92,14 @@ interface SupplierEndpointAPI {
     ): Response<fin_balance>
 
 
+    @GET("salaah/connect/upsert-supplier-app")
+    suspend fun upsertSupplierApp(
+        @HeaderMap headers: Map<String, String>,
+        @Query("asset_id") assetId: String,
+        @Query("supplier_app_ver") supplierAppVer: String
+    ): Response<UpsertResponse>
+
+
     @GET("terminal/customer/get-posuser-list")
      fun get_posuser_list(
         @HeaderMap headers: Map<String, String>,

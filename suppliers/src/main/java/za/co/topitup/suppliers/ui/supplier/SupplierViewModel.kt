@@ -104,6 +104,35 @@ class SupplierViewModel : ViewModel() {
 
         }
     }
+    val updateVer: (String, String) -> Flow<ApiResponse> = { version, licence ->
+        flow {
+            emit(ApiResponse.Loading(_data = null, isLoading = true)) // Loading state
+
+            val response = supplierRepository.getUpdateInfo(version, licence)
+
+            if (response.status == ApiStatus.SUCCESS) {
+                emit(response)
+            } else if (response.status == ApiStatus.EXCEPTION) {
+                Log.e("exception", "ex00" + response.message)
+                emit(response)
+            }
+        }
+    }
+    /*val updateVer:(version: String,licence:String) = fun(): Flow<ApiResponse> {
+        return flow {
+            emit(ApiResponse.Loading(_data = null, isLoading = true)) // 1. Loading State
+            val response = supplierRepository.getUpdateInfo()
+
+            if (response.status == ApiStatus.SUCCESS) {
+                emit(response)
+            }
+            if (response.status == ApiStatus.EXCEPTION) {
+                Log.e("exception", "ex00" + response.message)
+                emit(response)
+            }
+
+        }
+    }*/
 
 
 }
