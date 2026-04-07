@@ -95,7 +95,7 @@ interface SupplierEndpointAPI {
     @GET("salaah/connect/upsert-supplier-app")
     suspend fun upsertSupplierApp(
         @HeaderMap headers: Map<String, String>,
-        @Query("asset_id") assetId: String,
+        @Query("license_code") assetId: String,
         @Query("supplier_app_ver") supplierAppVer: String
     ): Response<UpsertResponse>
 

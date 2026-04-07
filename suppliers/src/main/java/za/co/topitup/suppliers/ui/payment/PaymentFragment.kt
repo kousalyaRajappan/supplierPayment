@@ -51,6 +51,28 @@ class PaymentFragment : Fragment() {
     private lateinit var supplierName: String
     private lateinit var supplierAccountNumber: String
 
+    private var isPaymentInProgress = false
+
+    companion object {
+        private const val TAG = "PaymentFragment"
+
+        @JvmStatic
+        fun newInstance(supplierId: Int, supplierName: String?, supplierAccountNumber: String?) =
+            PaymentFragment().apply {
+                arguments = Bundle().apply {
+                    if (supplierId != 0) {
+                        putInt(ARG_SUPPLIER_ID, supplierId)
+                    }
+                    if (supplierName != null) {
+                        putString(ARG_SUPPLIER_NAME, supplierName)
+                    }
+                    if (supplierAccountNumber != null) {
+                        putString(ARG_SUPPLIER_ACCOUNT_NUMBER, supplierAccountNumber)
+                    }
+                }
+            }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -92,6 +114,11 @@ class PaymentFragment : Fragment() {
         }
 
         binding.payButton.setOnClickListener {
+            if (isPaymentInProgress) {
+                logger(TAG, "Payment already in progress, ignoring click")
+                return@setOnClickListener
+            }
+
             payment.fullDate = Date()
             logger(TAG, payment.paymentReference)
             logger(TAG, payment.amount.toString())
@@ -109,46 +136,7 @@ class PaymentFragment : Fragment() {
                 binding.payButton.isEnabled = false
                 showConfirmDialog(payment)
 
-               /* binding.root.hideKeyboard()
-                logger(TAG, payment.toString())
-                Log.e("payment"+payment,"......."+supplierId+"..."+ supplierAccountNumber)
-                paymentViewModel.sendPaymentToApi(payment, supplierId, supplierAccountNumber)
-                    .observe(viewLifecycleOwner) { paymentResult ->
 
-                        if (paymentResult.status == ApiStatus.LOADING) {
-                            binding.paymentProgressBar.visibility = View.VISIBLE
-                            binding.cancelButton.isEnabled = false
-                            binding.payButton.isEnabled = false
-
-                        }
-                        if (paymentResult.status == ApiStatus.SUCCESS) {
-                            logger(TAG, "Payment Result in Fragment: $paymentResult")
-                            binding.paymentProgressBar.visibility = View.INVISIBLE
-                            showReceiptDialog()
-                            Handler(Looper.getMainLooper()).postDelayed(
-                                {
-                                    parentFragmentManager.popBackStack()
-                                },
-                                1000 // value in milliseconds
-                            )
-
-                        }
-                        if (paymentResult.status == ApiStatus.ERROR) {
-                            binding.paymentProgressBar.visibility = View.INVISIBLE
-                            binding.cancelButton.isEnabled = true
-                            binding.payButton.isEnabled = true
-                            logger(TAG, "Payment Error: ${paymentResult.message}")
-                            paymentResult.message?.let { it1 -> requireContext().toast(it1) }
-                        }
-
-                        if (paymentResult.status == ApiStatus.EXCEPTION) {
-                            binding.paymentProgressBar.visibility = View.INVISIBLE
-                            binding.cancelButton.isEnabled = true
-                            binding.payButton.isEnabled = true
-                            logger(TAG, "Payment Exception: ${paymentResult.message}")
-                            requireContext().toast(getString(R.string.networkError))
-                        }
-                    }*/
             }
         }
 
@@ -179,25 +167,6 @@ class PaymentFragment : Fragment() {
         _binding = null
     }
 
-    companion object {
-
-        @JvmStatic
-
-        fun newInstance(supplierId: Int, supplierName: String?, supplierAccountNumber: String?) =
-            PaymentFragment().apply {
-                arguments = Bundle().apply {
-                    if (supplierId != 0) {
-                        putInt(ARG_SUPPLIER_ID, supplierId)
-                    }
-                    if (supplierName != null) {
-                        putString(ARG_SUPPLIER_NAME, supplierName)
-                    }
-                    if (supplierAccountNumber != null) {
-                        putString(ARG_SUPPLIER_ACCOUNT_NUMBER, supplierAccountNumber)
-                    }
-                }
-            }
-    }
 
     private fun showReceiptDialog() {
         // Create an instance of the dialog fragment and show it
@@ -206,67 +175,94 @@ class PaymentFragment : Fragment() {
     }
 
     private fun showConfirmDialog(payment: PaymentRealm) {
-        val dialog : Dialog = Dialog(requireContext())
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE) // before
+        val dialog: Dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.setContentView(R.layout.dialog_confirm)
         dialog.setCancelable(false)
 
-        //progressBar = ((ProgressBar) dialog.findViewById(R.id.progressBar));
+        val txtCancel = dialog.findViewById<TextView>(R.id.txt_cancel)
+        val btConfirm = dialog.findViewById<TextView>(R.id.txt_ok)
 
-
-        var txt_cancel = dialog.findViewById<View>(R.id.txt_cancel) as TextView
-
-        var bt_confirm = dialog.findViewById<View>(R.id.txt_ok) as TextView
-        txt_cancel.setOnClickListener(View.OnClickListener {
+        txtCancel.setOnClickListener {
             binding.payButton.isEnabled = true
-
             dialog.dismiss()
-        })
-        bt_confirm.setOnClickListener(View.OnClickListener {
-            binding.payButton.isEnabled = true
+        }
 
+        btConfirm.setOnClickListener {
+            // Don't re-enable the button here - keep it disabled during API call
             dialog.dismiss()
+
+            // Set payment in progress flag
+            isPaymentInProgress = true
+
             binding.root.hideKeyboard()
             logger(TAG, payment.toString())
-            Log.e("payment"+payment,"......."+supplierId+"..."+ supplierAccountNumber)
+            Log.e("payment$payment", ".......$supplierId...$supplierAccountNumber")
+
             paymentViewModel.sendPaymentToApi(payment, supplierId, supplierAccountNumber)
                 .observe(viewLifecycleOwner) { paymentResult ->
+                    when (paymentResult.status) {
+                        ApiStatus.LOADING -> {
+                            binding.paymentProgressBar.visibility = View.VISIBLE
+                            binding.cancelButton.isEnabled = false
+                            binding.payButton.isEnabled = false
+                        }
 
-                    if (paymentResult.status == ApiStatus.LOADING) {
-                        binding.paymentProgressBar.visibility = View.VISIBLE
-                        binding.cancelButton.isEnabled = false
-                        binding.payButton.isEnabled = false
+                        ApiStatus.SUCCESS -> {
+                            logger(TAG, "Payment Result in Fragment: $paymentResult")
+                            binding.paymentProgressBar.visibility = View.INVISIBLE
+                            isPaymentInProgress = false // Reset flag on success
+                            showReceiptDialog()
+                            Handler(Looper.getMainLooper()).postDelayed(
+                                {
+                                    parentFragmentManager.popBackStack()
+                                },
+                                1000
+                            )
+                        }
 
-                    }
-                    if (paymentResult.status == ApiStatus.SUCCESS) {
-                        logger(TAG, "Payment Result in Fragment: $paymentResult")
-                        binding.paymentProgressBar.visibility = View.INVISIBLE
-                        showReceiptDialog()
-                        Handler(Looper.getMainLooper()).postDelayed(
-                            {
-                                parentFragmentManager.popBackStack()
-                            },
-                            1000 // value in milliseconds
-                        )
+                        ApiStatus.ERROR -> {
+                            binding.paymentProgressBar.visibility = View.INVISIBLE
+                            binding.cancelButton.isEnabled = true
+                            binding.payButton.isEnabled = true
+                            isPaymentInProgress = false // Reset flag on error
+                            logger(TAG, "Payment Error: ${paymentResult.message}")
+                            paymentResult.message?.let { message ->
+                                requireContext().toast(message)
+                            }
+                        }
 
-                    }
-                    if (paymentResult.status == ApiStatus.ERROR) {
-                        binding.paymentProgressBar.visibility = View.INVISIBLE
-                        binding.cancelButton.isEnabled = true
-                        binding.payButton.isEnabled = true
-                        logger(TAG, "Payment Error: ${paymentResult.message}")
-                        paymentResult.message?.let { it1 -> requireContext().toast(it1) }
-                    }
+                        ApiStatus.EXCEPTION -> {
+                            binding.paymentProgressBar.visibility = View.INVISIBLE
+                            binding.cancelButton.isEnabled = true
+                            binding.payButton.isEnabled = true
+                            isPaymentInProgress = false // Reset flag on exception
+                            logger(TAG, "Payment Exception: ${paymentResult.message}")
+                            requireContext().toast(getString(R.string.networkError))
+                        }
 
-                    if (paymentResult.status == ApiStatus.EXCEPTION) {
-                        binding.paymentProgressBar.visibility = View.INVISIBLE
-                        binding.cancelButton.isEnabled = true
-                        binding.payButton.isEnabled = true
-                        logger(TAG, "Payment Exception: ${paymentResult.message}")
-                        requireContext().toast(getString(R.string.networkError))
+                        ApiStatus.INVALID -> {
+                            binding.paymentProgressBar.visibility = View.INVISIBLE
+                            binding.cancelButton.isEnabled = true
+                            binding.payButton.isEnabled = true
+                            isPaymentInProgress = false // Reset flag on invalid status
+                            logger(TAG, "Payment Invalid Status: ${paymentResult.message}")
+                            requireContext().toast("Invalid payment status")
+                        }
+
+                        else -> {
+                            // Handle any unexpected status
+                            binding.paymentProgressBar.visibility = View.INVISIBLE
+                            binding.cancelButton.isEnabled = true
+                            binding.payButton.isEnabled = true
+                            isPaymentInProgress = false // Reset flag for unknown status
+                            logger(TAG, "Unknown payment status: ${paymentResult.status}")
+                            requireContext().toast("Unexpected error occurred")
+                        }
                     }
                 }
-        })
+        }
+
         dialog.show()
     }
 }

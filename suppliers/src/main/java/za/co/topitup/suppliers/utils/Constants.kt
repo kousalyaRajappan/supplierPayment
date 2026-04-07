@@ -7,7 +7,7 @@ object Constants {
     const val DEMO_LOGO_BASE_URL = "http://demo.topitup.co.za/logos"
 
     //TODO Change to actual production URLs
-    const val PROD_ENDPOINT_BASE_URL = "http://tx.topitup.co.za:25812/"
+    const val PROD_ENDPOINT_BASE_URL = "https://tx2.topitup.co.za/"
     const val PROD_LOGO_BASE_URL = "https://admin.topitup.co.za/logos"
 
 
