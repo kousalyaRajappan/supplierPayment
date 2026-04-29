@@ -23,6 +23,7 @@ import za.co.topitup.suppliers.models.Retailer
 import za.co.topitup.suppliers.models.fin_balance
 import za.co.topitup.suppliers.network.ApiStatus
 import za.co.topitup.suppliers.ui.supplier.SupplierViewModel
+import za.co.topitup.suppliers.ui.supplier.TAG
 import za.co.topitup.suppliers.utils.AppPreferences
 import za.co.topitup.suppliers.utils.Constants
 import java.text.SimpleDateFormat
@@ -119,8 +120,12 @@ class DashboardActivity : AppCompatActivity() {
         // Cards
         val cardSupplier = findViewById<CardView>(R.id.cardSupplier)
         val cardWholesaler = findViewById<CardView>(R.id.cardWholesaler)
+        val cardScanQR = findViewById<CardView>(R.id.cardScanQR)
+        val cardPaymentHistory = findViewById<CardView>(R.id.cardPaymentHistory)
+        val cardPaymentSummary = findViewById<CardView>(R.id.cardPaymentSummary)
+        val cardTransferToBank = findViewById<CardView>(R.id.cardTransferToBank)
 
-        animateCards(cardSupplier, cardWholesaler)
+        animateCards(cardSupplier, cardWholesaler, cardScanQR, cardPaymentHistory, cardPaymentSummary, cardTransferToBank)
 
         cardSupplier.setOnClickListener {
             it.animate().scaleX(0.97f).scaleY(0.97f).setDuration(100).withEndAction {
@@ -146,9 +151,31 @@ class DashboardActivity : AppCompatActivity() {
                 it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
             }.start()
 
-            // Uncomment when WholesalerActivity is ready:
-            // val intent = Intent(this, WholesalerActivity::class.java)
-            // startActivity(intent)
+        }
+        cardScanQR.setOnClickListener {
+            it.animate().scaleX(0.97f).scaleY(0.97f).setDuration(100).withEndAction {
+                it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+            }.start()
+
+        }
+        cardPaymentHistory.setOnClickListener {
+            it.animate().scaleX(0.97f).scaleY(0.97f).setDuration(100).withEndAction {
+                it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+            }.start()
+        }
+
+        cardPaymentSummary.setOnClickListener {
+            it.animate().scaleX(0.97f).scaleY(0.97f).setDuration(100).withEndAction {
+                it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+            }.start()
+
+        }
+
+        cardTransferToBank.setOnClickListener {
+            it.animate().scaleX(0.97f).scaleY(0.97f).setDuration(100).withEndAction {
+                it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+            }.start()
+
         }
     }
 
@@ -174,6 +201,7 @@ class DashboardActivity : AppCompatActivity() {
                     val finBalance: fin_balance = result.data as fin_balance
                     runOnUiThread {
                         tiu_title_balance.text = "Standard R " + finBalance.available_balance
+                        Log.e("getBalance",finBalance.available_balance.toString())
                         tiu_title_balance_cash.text = " Bills R " + finBalance.balance_cash
                         sharedPreferences.accountNumber = finBalance.acn1
                         tiu_title_outlet.text = sharedPreferences.accountNumber

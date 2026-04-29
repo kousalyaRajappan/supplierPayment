@@ -48,10 +48,7 @@ class SupplierRepository {
             .build()
         val gson = GsonBuilder()
             .setLenient()
-
             .create()
-
-
 
         val retrofit: Retrofit = Retrofit.Builder()
             .baseUrl(Retailer.endpointBaseURL)
