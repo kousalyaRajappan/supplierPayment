@@ -908,14 +908,16 @@ class Print(appContext: Context){
                     }
                     else if (result != 0)  {
                         val handler = Handler(Looper.getMainLooper())
-                        handler.post {
+                       /* handler.post {
                             context.toast("An error occurred while printing. Error Code: $result")
-                        }
+                        }*/
                         loop = false
                         return
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    loop = false
+
                 }
             } while (loop)
             threadRunning = false
@@ -958,9 +960,9 @@ class Print(appContext: Context){
                     }
                     else if (result != 0)  {
                         val handler = Handler(Looper.getMainLooper())
-                        handler.post {
+                       /* handler.post {
                             context.toast("An error occurred while printing. Error Code: $result")
-                        }
+                        }*/
                         loop = false
                         return
                     }
@@ -1096,9 +1098,9 @@ class Print(appContext: Context){
                             return
                         } else if (result != 0) {
                             val handler = Handler(Looper.getMainLooper())
-                            handler.post {
+                           /* handler.post {
                                 context.toast("An error occurred while printing. Error Code: $result")
-                            }
+                            }*/
                             loop = false
                             return
                         }

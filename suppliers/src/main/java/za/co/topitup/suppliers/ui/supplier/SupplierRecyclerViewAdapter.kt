@@ -2,6 +2,7 @@ package za.co.topitup.suppliers.ui.supplier
 
 
 import android.graphics.drawable.Drawable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -110,6 +111,7 @@ class SupplierRecyclerViewAdapter(
     }
 
     fun applyFilter(coverage: String) {
+        Log.e("coverage filter",coverage);
         val results = SupplierDatabaseOperations().getActivatedSuppliers(coverage)
         updateData(results)
     }
