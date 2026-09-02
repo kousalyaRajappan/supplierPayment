@@ -89,7 +89,7 @@ class SupplierFragment : Fragment() {
                 lifecycleScope.launch {
                     if (suppliersList[0].id != 0) {
                         SupplierDatabaseOperations().insertSuppliers(suppliersList)
-                        firstRun = false
+//                        firstRun = false
                         progressBar?.visibility = View.INVISIBLE
                         sharedPreferences.firstRun = firstRun
 //                        newDataLoaded.value = true

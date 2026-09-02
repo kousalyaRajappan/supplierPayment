@@ -182,6 +182,9 @@ class PaymentFragment : Fragment() {
 
         val txtCancel = dialog.findViewById<TextView>(R.id.txt_cancel)
         val btConfirm = dialog.findViewById<TextView>(R.id.txt_ok)
+        var tvSuplierName = dialog.findViewById<TextView>(R.id.tv_supplier_name)
+
+        tvSuplierName.text =supplierName
 
         txtCancel.setOnClickListener {
             binding.payButton.isEnabled = true

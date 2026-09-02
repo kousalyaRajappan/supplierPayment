@@ -33,12 +33,13 @@ class HistoryViewModell : ViewModel() {
 
         val retroInsatnce =RetroInsatnce.getRetroInstance()
         val supplierEndpointAPI = retroInsatnce.create(SupplierEndpointAPI::class.java)
+        val actualStartDate = if (startDate.isEmpty()) endDate else startDate
 
          var headerMap: HashMap<String, String> = HashMap()
         headerMap["device"] = Retailer.deviceType
         headerMap["license"] = Retailer.licence
         headerMap["posuser"] = Retailer.posUserId
-        val supplierEndpointRequest: Call<ResponseBody> = supplierEndpointAPI.get_payment_search(headerMap,startDate,endDate,txt)
+        val supplierEndpointRequest: Call<ResponseBody> = supplierEndpointAPI.get_payment_search(headerMap,actualStartDate,endDate,txt)
         supplierEndpointRequest.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
 
